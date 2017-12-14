@@ -1,7 +1,11 @@
 # MHDlab
 MHDlab labview library
 
-A library of labview programs for the data aquisition equipment in the MHD Lab at NETL. There is a VI corresponding to each instrument that can be run independently, or called alongside other VIs by a 'main' master program. The main VI programatically calls the instrument VIs and synchronizes their outputs into a TDMS format file. 
+A library of labview programs for the data aquisition equipment in the MHD Lab at NETL. There is a VI corresponding to each instrument that can be run independently, or called alongside other VIs by a 'main' master program. The main VI programatically calls the instrument VIs and synchronizes their outputs into a TDMS format file.
+
+
+[Here](https://1drv.ms/u/s!AvHHdvXLDFQi1XiAZ4IyI_BN5HBF) is a onenote notebook documenting the library: 
+
 
 These are the instruments being recorded:
 
