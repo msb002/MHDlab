@@ -5,26 +5,31 @@ A library of labview programs for the data aquisition equipment in the MHD Lab a
 
 These are the instruments being recorded:
 
-Spectrometers
+### Spectrometers
 
   Aquires data from Oceanoptics flame and NIR-512 spectrometers as well as switching a ? Multiplexer
-Motor Control
+  
+### Motor Control
 
   Controls a Galil 4-axis PLC motor system
-Power meters
+  
+### Power meters
 
   Aquires data from the data from Ophir pulse energy meters
-Sensors
+  
+### Sensors
 
   Aquires data from a NI PXI system (VI is generalized for any DAQmx tast) and Alicat flow meters
-Keithley
+  
+### Keithley
 
   Aqires data from Keithley 2812 and 6221 pair
-Lightfield
+  
+### Lightfield
 
   Operate PI-max4 cameras and ISOplane spectrograph by controlling Lightfield through Labview.
   
-Image Analysis
+### Image Analysis
 
   Use labview to process images for data analysis.
 
