@@ -11,6 +11,7 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="LightField Automation.lvclass" Type="LVClass" URL="../../../../../../../ProgramData/Documents/Princeton Instruments/LightField/Add-in and Automation SDK/Samples/LabVIEW Automation/lightfield-automation-labview/LightField Automation.lvclass"/>
+		<Item Name="Save gate sweep.vi" Type="VI" URL="../VIs/Save gate sweep.vi"/>
 		<Item Name="Simple Dataflow Example_MHD.vi" Type="VI" URL="../VIs/Simple Dataflow Example_MHD.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
