@@ -69,6 +69,7 @@
 			<Item Name="PrincetonInstruments.LightFieldAddInSupportServices.dll" Type="Document" URL="../../../../../../../Program Files/Princeton Instruments/LightField/PrincetonInstruments.LightFieldAddInSupportServices.dll"/>
 			<Item Name="PrincetonInstruments.LightFieldViewV3.dll" Type="Document" URL="../../../../../../../Program Files/Princeton Instruments/LightField/AddInViews/PrincetonInstruments.LightFieldViewV3.dll"/>
 			<Item Name="Process_BeamProfileGateSweep.vi" Type="VI" URL="../VIs/Process_BeamProfileGateSweep.vi"/>
+			<Item Name="Save_SpectralGateSweep.vi" Type="VI" URL="../VIs/Save_SpectralGateSweep.vi"/>
 			<Item Name="System" Type="VI" URL="System">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
