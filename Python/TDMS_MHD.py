@@ -1,6 +1,8 @@
 
 from nptdms import TdmsFile as TF
 import numpy as np
+import os
+from glob import glob
 
 
 class TDMS():
@@ -19,6 +21,22 @@ class TDMS():
         ##tracks is meant to track what data has already been pulled from the imported file, and track what position in the data array certain 
         ##data are
         ##           tracks uses channelnames as the word and an integer as its definition
+    def set_pathnames(self, path, filestr):
+        samples = self.samples
+        pathnames = self.pathnames
+        for file in os.listdir(path):
+            samples = np.append(samples, str(file))
+        for sample in samples:
+            this = glob(path+"\\"+sample+"\\" + filestr)
+            pathnames = np.append(pathnames, this)
+        
+        self.pathnames = pathnames    
+        self.samples = samples
+        return
+    
+        ##sets the path to the main folder with subfolders and tdms files in those subfolders
+        ##uses the names of folders as samples and filepaths as pathnames
+        ##filestr is a string with regular expressions defining the files to include in the path list. example: "*_together.tdms"
         
     def import_data(self, string):
         #Will import all data in the defined file path with substring input
