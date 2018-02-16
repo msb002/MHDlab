@@ -11,6 +11,10 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="LightField Automation.lvclass" Type="LVClass" URL="../../../../../../../ProgramData/Documents/Princeton Instruments/LightField/Add-in and Automation SDK/Samples/LabVIEW Automation/lightfield-automation-labview/LightField Automation.lvclass"/>
+		<Item Name="ParseGateInfo.vi" Type="VI" URL="../VIs/ParseGateInfo.vi"/>
+		<Item Name="Process_SpectralEmissionGateSweep.vi" Type="VI" URL="../VIs/Process_SpectralEmissionGateSweep.vi"/>
+		<Item Name="Save_BeamProfileGateSweep.vi" Type="VI" URL="../VIs/Save_BeamProfileGateSweep.vi"/>
+		<Item Name="Save_SpectralRepetitive.vi" Type="VI" URL="../VIs/Save_SpectralRepetitive.vi"/>
 		<Item Name="Simple Dataflow Example_MHD.vi" Type="VI" URL="../VIs/Simple Dataflow Example_MHD.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
@@ -65,6 +69,8 @@
 			<Item Name="PrincetonInstruments.LightField.AutomationV3.dll" Type="Document" URL="../../../../../../../Program Files/Princeton Instruments/LightField/PrincetonInstruments.LightField.AutomationV3.dll"/>
 			<Item Name="PrincetonInstruments.LightFieldAddInSupportServices.dll" Type="Document" URL="../../../../../../../Program Files/Princeton Instruments/LightField/PrincetonInstruments.LightFieldAddInSupportServices.dll"/>
 			<Item Name="PrincetonInstruments.LightFieldViewV3.dll" Type="Document" URL="../../../../../../../Program Files/Princeton Instruments/LightField/AddInViews/PrincetonInstruments.LightFieldViewV3.dll"/>
+			<Item Name="Process_BeamProfileGateSweep.vi" Type="VI" URL="../VIs/Process_BeamProfileGateSweep.vi"/>
+			<Item Name="Save_SpectralGateSweep.vi" Type="VI" URL="../VIs/Save_SpectralGateSweep.vi"/>
 			<Item Name="System" Type="VI" URL="System">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
