@@ -73,9 +73,9 @@ class TDMS():
             print("error")
         return arr   
     
-class TDMS_pd(TDMS):
+class TDMS_pd():
     def __init__(self, ):
-        TDMS.__init__(self)
+        #TDMS.__init__(self)
         self.datapdframes = {}
         self.datapseries = {}
         
@@ -89,9 +89,9 @@ class TDMS_pd(TDMS):
         self.datapdframes[groupname] = data
         return
     
-class TDMS_np(TDMS):
+class TDMS_np():
     def __init__(self):
-        TDMS.__init__(self)
+        #TDMS.__init__(self)
         self.data = {}
         self.tracks = {}
         
