@@ -31,7 +31,6 @@ class TDMS():
                         pathnames = np.append(pathnames, file_path)
             i = i+1
         self.pathnames = pathnames 
-        print(pathnames)
         return
     
         ##sets the path to the main folder with subfolders and tdms files in those subfolders
