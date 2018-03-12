@@ -2,7 +2,7 @@
 from nptdms import TdmsFile as TF
 import numpy as np
 import os
-from glob import glob
+import re
 
 
 class TDMS():
@@ -17,18 +17,20 @@ class TDMS():
         ##imports is a dictionary, using the pathnames as the word and the imported tdms file as its definition
         ##           this step is necessary as importing the data is the longest process, but pulling data to arrays is almost immediate
     
-    #TODO: This needs to be make more general. i.e. not rely on specific folder structure
-    def set_pathnames(self, path, filestr):
-        samples = self.samples
-        pathnames = self.pathnames
-        for file in os.listdir(path):
-            samples = np.append(samples, str(file))
-        for sample in samples:
-            this = glob(path+"\\"+sample+"\\" + filestr)
-            pathnames = np.append(pathnames, this)
-        
-        self.pathnames = pathnames    
-        self.samples = samples
+    #get the paths of the files. This function takes a path, a regular expression for the filenames, and a flag for wether you want to recursively
+    #search through the file directories. 
+    def set_pathnames(self, path, regExp= ".*\.tdms$", searchNested = True):
+        pathnames = []
+    
+        i = 0
+        for root, subdirs, files in os.walk(path):
+            if((searchNested == True) or (i == 0)):  #Checks if you want to search subdirectories or if we are still in 'path' (first iteration)
+                for filename in files:
+                    if(re.match(regExp,filename)):
+                        file_path = os.path.join(root, filename)
+                        pathnames = np.append(pathnames, file_path)
+            i = i+1
+        self.pathnames = pathnames 
         return
     
         ##sets the path to the main folder with subfolders and tdms files in those subfolders
@@ -46,7 +48,7 @@ class TDMS():
         self.imports = imports
         return
 
-    def createref(self,):
+    def create_ref(self,):
         dic = {}
         for impor in self.imports:
             file = self.imports[impor]
