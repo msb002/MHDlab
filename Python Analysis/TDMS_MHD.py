@@ -12,7 +12,6 @@ class TDMS():
         self.imports = {}
 
         
-        ##samples is a list of strings, the samples names
         ##pathnames is the full pathnames to get to each tdms file (there maybe multiple tdms files associated to different samples)
         ##imports is a dictionary, using the pathnames as the word and the imported tdms file as its definition
         ##           this step is necessary as importing the data is the longest process, but pulling data to arrays is almost immediate
