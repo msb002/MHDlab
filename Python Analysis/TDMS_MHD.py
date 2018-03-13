@@ -89,7 +89,7 @@ class TDMS_pd():
                 data = file.object(groupname).as_dataframe()
         
         self.datapdframes[groupname] = data
-        return
+        return data
     
 class TDMS_np():
     def __init__(self):
