@@ -123,8 +123,6 @@ class TDMS_np():
                             group = item
                 subdata = file.object(group,track).data    
                 self.store_data(string, subdata)
-        else:
-            print("Error: trying to store duplicate data")
         
         self.tracks = tracks
         return
