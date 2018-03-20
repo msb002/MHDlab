@@ -14,6 +14,7 @@
 		<Item Name="ParseGateInfo.vi" Type="VI" URL="../VIs/ParseGateInfo.vi"/>
 		<Item Name="Process_SpectralEmissionGateSweep.vi" Type="VI" URL="../VIs/Process_SpectralEmissionGateSweep.vi"/>
 		<Item Name="Save_BeamProfileGateSweep.vi" Type="VI" URL="../VIs/Save_BeamProfileGateSweep.vi"/>
+		<Item Name="Save_RawImageCSV.vi" Type="VI" URL="../VIs/Save_RawImageCSV.vi"/>
 		<Item Name="Save_SpectralRepetitive.vi" Type="VI" URL="../VIs/Save_SpectralRepetitive.vi"/>
 		<Item Name="Simple Dataflow Example_MHD.vi" Type="VI" URL="../VIs/Simple Dataflow Example_MHD.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -57,6 +58,11 @@
 				<Item Name="To .NET Object.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/dotnet.llb/To .NET Object.vi"/>
 				<Item Name="Trim Whitespace.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Trim Whitespace.vi"/>
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
+				<Item Name="Write Delimited Spreadsheet (DBL).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write Delimited Spreadsheet (DBL).vi"/>
+				<Item Name="Write Delimited Spreadsheet (I64).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write Delimited Spreadsheet (I64).vi"/>
+				<Item Name="Write Delimited Spreadsheet (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write Delimited Spreadsheet (string).vi"/>
+				<Item Name="Write Delimited Spreadsheet.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write Delimited Spreadsheet.vi"/>
+				<Item Name="Write Spreadsheet String.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write Spreadsheet String.vi"/>
 			</Item>
 			<Item Name="DOMUserDefRef.dll" Type="Document" URL="DOMUserDefRef.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
