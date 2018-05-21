@@ -27,5 +27,5 @@ def PL_peakmax(data, wavelength, wlmin,wlmax):
         maximum = data_cut[frame].max()
         data_cut_max = np.append(data_cut_max, maximum)
         
-    return data_cut_max, wavelength_cut
+    return data_cut_max, wavelength_cut, data_cut
 
