@@ -3,6 +3,7 @@ from nptdms import TdmsFile as TF
 import numpy as np
 import os
 import re
+import pandas as pd
 
 
 class TDMS():
@@ -20,6 +21,7 @@ class TDMS():
     #search through the file directories. 
     def set_pathnames(self, path, regExp= ".*\.tdms$", searchNested = True):
         pathnames = []
+        filenames = []
     
         i = 0
         for root, subdirs, files in os.walk(path):
@@ -27,9 +29,10 @@ class TDMS():
                 for filename in files:
                     if(re.match(regExp,filename)):
                         file_path = os.path.join(root, filename)
+                        filenames = np.append(filenames, filename)
                         pathnames = np.append(pathnames, file_path)
             i = i+1
-        self.pathnames = pathnames 
+        self.pathnames = pd.Series(pathnames, index = filenames)
         return
     
         ##sets the path to the main folder with subfolders and tdms files in those subfolders
