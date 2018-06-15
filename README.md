@@ -11,7 +11,7 @@ These are the instruments being recorded:
 
 ### Spectrometers
 
-  Aquires data from Oceanoptics flame and NIR-512 spectrometers as well as switching a ? Multiplexer
+  Aquires data from Oceanoptics Flame and NIR-512 spectrometers as well as switching a OceanOptics Multiplexer
   
 ### Motor Control
 
