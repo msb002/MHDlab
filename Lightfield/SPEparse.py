@@ -28,10 +28,13 @@ import os
 
 def SPEtoTDMS_seq_spectra(spefilepath):
     
+    if isinstance(spefilepath,bytes):
+        spefilepath = spefilepath.decode("utf-8")
+    
     folder = os.path.splitext(os.path.dirname(spefilepath))[0]
     base = os.path.splitext(os.path.basename(spefilepath))[0]
     
-    tdmsfilepath = folder + "/" +base + ".tdms"
+    tdmsfilepath = os.path.join(folder,base + ".tdms")
     
     spe_file = sl.load_from_files([spefilepath])
 
@@ -69,7 +72,9 @@ def SPEtoTDMS_seq_spectra(spefilepath):
     with TdmsWriter(tdmsfilepath) as tdms_writer:   
         channel_object = ChannelObject("Common", "Gate Delays" ,gatedelays, properties={})
         tdms_writer.write_segment([root_object,common_group_object,channel_object])
-    
+        
+        channel_object = ChannelObject("Common", "Wavelength" ,wavelength, properties={})
+        tdms_writer.write_segment([root_object,common_group_object,channel_object])    
         for frame in frames:
             channel_object = ChannelObject("Raw Data", "Frame" + str(framenum), frame[0][0], properties={})
             tdms_writer.write_segment([root_object,rawdata_group_object,channel_object])
@@ -78,19 +83,18 @@ def SPEtoTDMS_seq_spectra(spefilepath):
     
 def SPEtoTDMS_seq_image(spefilepath):
     
+    if isinstance(spefilepath,bytes):
+        spefilepath = spefilepath.decode("utf-8")
+    
     folder = os.path.splitext(os.path.dirname(spefilepath))[0]
     base = os.path.splitext(os.path.basename(spefilepath))[0]
-    
-    tdmsfilepath = folder + "/" +base + ".tdms"
-    
+
+    tdmsfilepath = os.path.join(folder,base + ".tdms")
     spe_file = sl.load_from_files([spefilepath])
 
     frames  = spe_file.data
     
     num_frames = spe_file.nframes
-    
-    
-    #starting_gate = spe_file.footer.SpeFormat.Calibrations.SensorInformation['height']
     
     Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
     
@@ -105,14 +109,10 @@ def SPEtoTDMS_seq_image(spefilepath):
     })
     
 
-    
     common_group_object = GroupObject("Common", properties={
     })
     
     framenum = 0
-    
-    
-    
     
     with TdmsWriter(tdmsfilepath) as tdms_writer:
         channel_object = ChannelObject("Common", "Gate Delays" ,gatedelays, properties={})
@@ -125,14 +125,15 @@ def SPEtoTDMS_seq_image(spefilepath):
                 tdms_writer.write_segment([root_object,rawdata_group_object,channel_object])
                 linenum = linenum +1
             framenum = framenum +1    
-
-#spefilepath = 'C:/Users/aspit/OneDrive/Data/Test.spe'
-#SPEtoTDMS_seq_spectra(spefilepath)
+            
+    
+spefilepath = 'C:/Users/aspitarl/OneDrive/Data/Test.spe'
+SPEtoTDMS_seq_spectra(spefilepath)
 
 ##image test
             
-spefilepath = 'C:/Users/aspit/OneDrive/Data/Testimage.spe'
-SPEtoTDMS_seq_image(spefilepath)
+#spefilepath = 'C:\\Users\\aspitarl\\OneDrive\\Data\\Testimage.spe'
+#SPEtoTDMS_seq_image(spefilepath)
     
 #spe_image = sl.load_from_files(['C:/Users/aspitarl/OneDrive/Data/TestImage.spe'])   
 
