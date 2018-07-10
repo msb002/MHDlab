@@ -1,3 +1,4 @@
+spe2py
 numpy
 pandas
 nptdms
