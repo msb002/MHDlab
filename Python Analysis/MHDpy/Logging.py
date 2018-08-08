@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This is a temporary script file.
+This program pulls data from the logging files to copy the 'control VI' files
 """
 
 
@@ -41,22 +39,25 @@ for (dirpath, dirnames, filenames) in os.walk(DataPath):
     break
 
 
-
-Filesuffix = []
-Filepaths = []
+Fileinfo = []
 for Project in ProjectFolders:
     for dirpath,_,filenames in os.walk(os.path.join(DataPath, Project)):
         for f in filenames:
-            #print(os.path.abspath(os.path.join(dirpath, f)))
-            f, ext = os.path.splitext(f)
+            fname, ext = os.path.splitext(f)
             prefixstr = "Control"
-            if(f.startswith(prefixstr) and ext == '.tdms'):
-                f = f[len(prefixstr):]
-                Filesuffix = np.append(Filesuffix,f)
-                Filepaths = np.append(Filepaths,dirpath)
+            if(fname.startswith(prefixstr) and ext == '.tdms'):
+                path = os.path.join(dirpath,f)
+                print(path)
+                controltdms = TF(os.path.join(dirpath,f))
+                timedata = controltdms.channel_data('Global', 'Time')
+                suf = fname[len(prefixstr):]
+                Fileinfo.append((suf,dirpath,timedata))
 
+Fileinfo = pd.DataFrame(Fileinfo, columns = ['suffix','folder','time'])
 
+print(Fileinfo)
 
+"""
 
 
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
@@ -83,3 +84,6 @@ for Logfile in Logfiles:
                 root_object,
                 group_object,
                 channel_object])
+
+
+"""
