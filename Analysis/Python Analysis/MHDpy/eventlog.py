@@ -5,16 +5,43 @@ Spyder Editor
 This is a temporary script file.
 """
 import json
+import time
 
 Eventlogfile = ""
 
-def fixeventlogfile():
+def writeevent(event):
+    with open(Eventlogfile, "a") as write_file:
+        json.dump(event, write_file)
+        write_file.write('\n')
+
+def initialize():
     global Eventlogfile
     if isinstance(Eventlogfile,bytes): #The labview addin passes a bytes instead of string. 
         Eventlogfile = Eventlogfile.decode("utf-8")
 
+    event = {
+    "dt": time.time(),
+    "event": {
+        "type" : "MonitorVIStarted"
+    } 
+    }
 
-def TestCaseInfoChange(TestDataInfo, time):
+    writeevent(event)
+
+
+
+def shutdown():
+    event = {
+    "dt": time.time(),
+    "event": {
+        "type" : "MonitorVIClosed"
+    } 
+    }
+
+    writeevent(event)
+
+
+def TestCaseInfoChange(TestDataInfo):
     for idx, string in  enumerate(TestDataInfo):
         TestDataInfo[idx] = string.decode("utf-8")
     
@@ -24,9 +51,10 @@ def TestCaseInfoChange(TestDataInfo, time):
     measurementnumber = TestDataInfo[3]
 
     event = {
-    "dt": time,
+    "dt": time.time(),
     "event": {
-        "TestCaseInfoChange": {
+        "type" : "TestCaseInfoChange",
+        "event info": {
             "project": project,
             "subfolder": subfolder,
             "filename": filename,
@@ -35,8 +63,4 @@ def TestCaseInfoChange(TestDataInfo, time):
         }
     }
 
-    print(event)
-
-    with open(Eventlogfile, "a") as write_file:
-        json.dump(event, write_file)
-        write_file.write('\n')
+    writeevent(event)
