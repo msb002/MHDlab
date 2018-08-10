@@ -64,3 +64,18 @@ def TestCaseInfoChange(TestDataInfo):
     }
 
     writeevent(event)
+
+
+def RunningVIsChange(VIname,OnOff):
+    event = {
+    "dt": time.time(),
+    "event": {
+        "type" : "VIRunningChange",
+        "event info": {
+            "name" : VIname.decode("utf-8"),
+            "newstate" : OnOff
+            }
+        }
+    }
+
+    writeevent(event)
