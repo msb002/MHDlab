@@ -79,3 +79,18 @@ def RunningVIsChange(VIname,OnOff):
     }
 
     writeevent(event)
+
+
+def SavingVIsChange(VIname,OnOff):
+    event = {
+    "dt": time.time(),
+    "event": {
+        "type" : "VISavingChange",
+        "event info": {
+            "name" : VIname.decode("utf-8"),
+            "newstate" : OnOff
+            }
+        }
+    }
+
+    writeevent(event)
