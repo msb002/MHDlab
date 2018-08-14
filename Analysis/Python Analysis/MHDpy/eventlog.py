@@ -11,8 +11,8 @@ Eventlogfile = ""
 
 def writeevent(event):
     with open(Eventlogfile, "a") as write_file:
+        write_file.write(',\n')
         json.dump(event, write_file)
-        write_file.write('\n')
 
 def initialize():
     global Eventlogfile
@@ -26,7 +26,20 @@ def initialize():
     } 
     }
 
-    writeevent(event)
+    with open(Eventlogfile,'r') as read_file:
+        contents = read_file.read()
+
+    with open(Eventlogfile,'a') as write_file:
+        if(len(contents) > 0):
+            if(contents[-1] == ']'):
+                length = write_file.seek(0,2)
+                write_file.seek(length-2)
+                write_file.truncate()
+                write_file.write(',\n')
+        else:
+            write_file.write('[\n')
+        json.dump(event, write_file)
+
 
 
 
@@ -39,6 +52,9 @@ def shutdown():
     }
 
     writeevent(event)
+
+    with open(Eventlogfile,'a') as write_file:
+        write_file.write('\n]')
 
 
 def TestCaseInfoChange(TestDataInfo):
