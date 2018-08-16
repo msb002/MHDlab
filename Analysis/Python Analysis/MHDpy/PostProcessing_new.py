@@ -55,7 +55,7 @@ def cut_tdms_file(filepath,timestamps,samplerate):
 
     data = Logfiletdms.as_dataframe()
 
-    data = data[idx1:idx2][:]
+    data = data[idx1*samplerate:idx2*samplerate][:]
 
     f, ext = os.path.splitext(filepath)
 
@@ -65,33 +65,44 @@ def cut_tdms_file(filepath,timestamps,samplerate):
     "prop1": "foo",
     "prop2": 3,
     })
-    group_object = GroupObject("group_1", properties={
-        "prop1": 1.2345,
-        "prop2": False,
-    })
-    
-    
-    channel_object = ChannelObject("group_1", "channel_1", data[:]["/'Data'/'Current_1'"], properties={})
+
 
     with TdmsWriter(newfile) as tdms_writer:
+        channel_object = ChannelObject('Global', 'Time', timedata[idx1:idx2], properties={})
+        
         tdms_writer.write_segment([
             root_object,
-            group_object,
             channel_object])
 
+        for channelstr in data.columns:
+            strsplit = channelstr.split('/')
+            group = strsplit[1].replace("\'","")
+            channel = strsplit[2].replace("\'","")
+            if(group == 'Data'):
+                channel_object = ChannelObject('Data' , channel, data[channelstr].as_matrix(), properties={})
+                tdms_writer.write_segment([
+                    root_object,
+                    channel_object])
 
-DataPath = 'C:/Labview Test Data/2018-08-13/Sensors/Log_Sensors_DAQ_0.tdms'
 
-Logfiletdms = TF(DataPath)
-
-timedata = np.array(Logfiletdms.channel_data('Global','Time'))
+    
+    
 
 
 
-timestamps = [1534213304, 1534213317]
 
-time1 = datetime.datetime.utcfromtimestamp(timestamps[0]).replace(tzinfo=pytz.UTC)
+# DataPath = 'C:/Labview Test Data/2018-08-13/Sensors/Log_Sensors_DAQ_0.tdms'
 
-time2 = datetime.datetime.utcfromtimestamp(timestamps[1]).replace(tzinfo=pytz.UTC)
+# Logfiletdms = TF(DataPath)
 
-data = cut_tdms_file(DataPath,timestamps,100)
+# timedata = np.array(Logfiletdms.channel_data('Global','Time'))
+
+
+
+# timestamps = [1534213306, 1534213315]
+
+# time1 = datetime.datetime.utcfromtimestamp(timestamps[0]).replace(tzinfo=pytz.UTC)
+
+# time2 = datetime.datetime.utcfromtimestamp(timestamps[1]).replace(tzinfo=pytz.UTC)
+
+# data = cut_tdms_file(DataPath,timestamps,100)
