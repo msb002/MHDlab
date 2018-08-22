@@ -3,3 +3,5 @@ numpy
 pandas
 nptdms
 json
+pyqt5
+pyqt5-tools
