@@ -76,6 +76,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
+        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))

@@ -56,11 +56,15 @@ class MyDynamicMplCanvas(MyMplCanvas):
     def compute_initial_figure(self):
         self.axes.plot([], [], 'r')
 
-    def update_figure(self,data):
-        l = data
+    def update_figure(self,channel):
+        timearray = channel.time_track(absolute_time = True)
+
+        data = channel.data
+
         self.axes.cla()
-        self.axes.plot(data)
+        self.axes.plot(timearray,data)
         self.draw()
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -143,6 +147,8 @@ class Ui_MainWindow(object):
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))
+        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
+        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
 
     def open_tdmsfile(self):
         name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
@@ -167,15 +173,17 @@ class Ui_MainWindow(object):
 
             self.updatechannels()
 
+
+
     def refresh(self):
         
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         selchannel = self.selectChannel.currentRow()
         channel = channels[selchannel]
-        data = channel.data
 
-        self.plotwidget.update_figure(data)
+        self.plotwidget.update_figure(channel)
+        self.updatetimes(channel)
 
         #self.selectGroup.set
 
@@ -190,6 +198,20 @@ class Ui_MainWindow(object):
         self.selectChannel.clear()
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
+
+    def updatetimes(self,channel):
+        timearray = channel.time_track(absolute_time = True, accuracy = 'ms')
+        ts_start = (timearray[0] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+        startdatetime = datetime.datetime.utcfromtimestamp(int(ts_start))
+        ts_end = (timearray[0] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+        enddatetime = datetime.datetime.utcfromtimestamp(int(ts_end))
+        self.startTimeInput.setDateTime(startdatetime)
+        self.endTimeInput.setDateTime(enddatetime)
+
+
+
+
+
 
 
 
