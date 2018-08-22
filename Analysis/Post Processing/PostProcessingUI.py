@@ -56,10 +56,10 @@ class MyDynamicMplCanvas(MyMplCanvas):
     def compute_initial_figure(self):
         self.axes.plot([], [], 'r')
 
-    def update_figure(self):
-        l = [random.randint(0,10) for i in range(4)]
+    def update_figure(self,data):
+        l = data
         self.axes.cla()
-        self.axes.plot([0,1,2,3], l)
+        self.axes.plot(data)
         self.draw()
 
 class Ui_MainWindow(object):
@@ -84,7 +84,7 @@ class Ui_MainWindow(object):
         self.btn_refresh = QtWidgets.QPushButton(self.centralwidget)
         self.btn_refresh.setGeometry(QtCore.QRect(140, 350, 93, 28))
         self.btn_refresh.setObjectName("btn_refresh")
-        self.btn_refresh.clicked.connect(self.plotwidget.update_figure)
+        self.btn_refresh.clicked.connect(self.refresh)
 
         self.btn_parse = QtWidgets.QPushButton(self.centralwidget)
         self.btn_parse.setGeometry(QtCore.QRect(240, 350, 93, 28))
@@ -145,26 +145,37 @@ class Ui_MainWindow(object):
         self.btn_open.setText(_translate("MainWindow", "Open File"))
 
     def open_tdmsfile(self):
-        name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-16\\Sensors')
-        filepath = name[0]
-        self.Logfiletdms = TF(filepath)
+        name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
+        if(name[0] == ''):
+            pass
+        else:
+            filepath = name[0]
+            self.Logfiletdms = TF(filepath)
 
-        folder = os.path.split(filepath)
-        datefolder = os.path.split(folder[0])
-        eventlogpath = os.path.join(datefolder[0],'eventlog.json')
-        with open(eventlogpath) as fp:
-            self.jsonfile = json.load(fp)
-        text = json.dumps(self.jsonfile)
-        self.textBrowser.setText(text)
+            folder = os.path.split(filepath)
+            datefolder = os.path.split(folder[0])
+            eventlogpath = os.path.join(datefolder[0],'eventlog.json')
+            with open(eventlogpath) as fp:
+                self.jsonfile = json.load(fp)
+            text = json.dumps(self.jsonfile)
+            self.textBrowser.setText(text)
+            
+            self.groups = self.Logfiletdms.groups()
+            self.selectGroup.clear()
+            self.selectGroup.insertItems(0,self.groups)
+            self.selectGroup.setCurrentRow(0)
+
+            self.updatechannels()
+
+    def refresh(self):
         
-        self.groups = self.Logfiletdms.groups()
-        self.selectGroup.clear()
-        self.selectGroup.insertItems(0,self.groups)
-        self.selectGroup.setCurrentRow(0)
+        selgroup = self.selectGroup.currentRow()
+        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+        selchannel = self.selectChannel.currentRow()
+        channel = channels[selchannel]
+        data = channel.data
 
-        self.updatechannels()
-
-
+        self.plotwidget.update_figure(data)
 
         #self.selectGroup.set
 
