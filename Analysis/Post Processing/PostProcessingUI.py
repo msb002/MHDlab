@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.btn_open = QtWidgets.QPushButton(self.centralwidget)
         self.btn_open.setGeometry(QtCore.QRect(40, 350, 93, 28))
         self.btn_open.setObjectName("btn_open")
-        self.btn_open.clicked.connect(self.open_file)
+        self.btn_open.clicked.connect(self.open_tdmsfile)
 
         self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
         self.textBrowser.setGeometry(QtCore.QRect(450, 40, 301, 351))
@@ -122,9 +122,23 @@ class Ui_MainWindow(object):
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))
 
-    def open_file(self):
-        name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File')
-        print(name)
+    def open_tdmsfile(self):
+        name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\')
+        filepath = name[0]
+        self.Logfiletdms = TF(filepath)
+        folder = os.path.split(filepath)
+        datefolder = os.path.split(folder[0])
+        eventlogpath = os.path.join(datefolder[0],'eventlog.json')
+        with open(eventlogpath) as fp:
+            self.jsonfile = json.load(fp)
+        text = json.dumps(self.jsonfile)
+        self.textBrowser.setText(text)
+        
+
+
+
+
+
 
 
 app = QtWidgets.QApplication(sys.argv)
