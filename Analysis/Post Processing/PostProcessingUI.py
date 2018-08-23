@@ -182,9 +182,9 @@ class Ui_MainWindow(object):
 
         self.tci = self.gettestcaseinfo()
         if(len(self.tci)>0):
-            folder = self.tci[0]['project'] + '\\'+ self.tci[0]['subfolder']
+            folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
-            filename = self.tci[0]['filename'] + '_'+ self.tci[0]['measurementnumber']
+            filename = self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
             self.filenameEdit.setText(filename)
             self.filepath = os.path.join(self.datefolder, folder,filename)
             self.filepath = self.filepath + '.tdms'
@@ -229,7 +229,7 @@ class Ui_MainWindow(object):
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
-            if(time>time1 and time<=time2):
+            if(time<time1): #TODO: add indicator if another event is in the window
                 testcaseinfoarray.append(tci)
 
         return testcaseinfoarray
@@ -240,10 +240,6 @@ class Ui_MainWindow(object):
         idx1 = nearest_timeind(timedata,self.time1)
         idx2 = nearest_timeind(timedata,self.time2)
 
-        data = self.Logfiletdms.as_dataframe()
-
-        data = data[idx1:idx2][:]
-
         f, ext = os.path.splitext(self.filepath)
 
         newfile = f + '_cut.tdms'
@@ -253,21 +249,21 @@ class Ui_MainWindow(object):
             os.makedirs(dir)
 
         root_object = RootObject(properties={
-        "prop1": "foo",
-        "prop2": 3,
         })
 
-
         with TdmsWriter(newfile,mode='w') as tdms_writer:
-            for channelstr in data.columns:
-                strsplit = channelstr.split('/')
-                group = strsplit[1].replace("\'","")
-                channel = strsplit[2].replace("\'","")
-
-                channel_object = ChannelObject('Data' , channel, data[channelstr].as_matrix(), properties={})
-                tdms_writer.write_segment([
-                    root_object,
-                    channel_object])
+            for group in self.Logfiletdms.groups():
+                channels = self.Logfiletdms.group_channels(group)
+                for channel in channels:
+                    props = channel.properties
+                    start= props['wf_start_time']
+                    offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
+                    print(offset)
+                    props['wf_start_time'] = start + offset
+                    channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
+                    tdms_writer.write_segment([
+                        root_object,
+                        channel_object])
 
 class MyMplCanvas(FigureCanvas):
     def __init__(self, parent = None, width =5, height = 4, dpi = 100):
