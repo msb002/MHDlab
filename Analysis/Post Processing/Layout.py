@@ -19,6 +19,7 @@ class Ui_MainWindow(object):
         self.startTimeInput.setObjectName("startTimeInput")
         self.endTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.endTimeInput.setGeometry(QtCore.QRect(240, 310, 194, 22))
+        self.endTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
         self.endTimeInput.setObjectName("endTimeInput")
         self.btn_refresh = QtWidgets.QPushButton(self.centralwidget)
         self.btn_refresh.setGeometry(QtCore.QRect(140, 350, 93, 28))
@@ -77,7 +78,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
-        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
+        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss:ms AP"))
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))

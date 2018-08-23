@@ -56,13 +56,14 @@ class MyDynamicMplCanvas(MyMplCanvas):
     def compute_initial_figure(self):
         self.axes.plot([], [], 'r')
 
-    def update_figure(self,channel):
+    def update_figure(self,channel,time1,time2):
         timearray = channel.time_track(absolute_time = True)
-
         data = channel.data
 
         self.axes.cla()
         self.axes.plot(timearray,data)
+        self.axes.axvline(time1)
+        self.axes.axvline(time2)
         self.draw()
 
 
@@ -80,10 +81,14 @@ class Ui_MainWindow(object):
         self.startTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.startTimeInput.setGeometry(QtCore.QRect(40, 310, 194, 22))
         self.startTimeInput.setObjectName("startTimeInput")
+        self.startTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
+        self.startTimeInput.dateTimeChanged.connect(self.refresh)
 
         self.endTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.endTimeInput.setGeometry(QtCore.QRect(240, 310, 194, 22))
         self.endTimeInput.setObjectName("endTimeInput")
+        self.endTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
+        self.endTimeInput.dateTimeChanged.connect(self.refresh)
 
         self.btn_refresh = QtWidgets.QPushButton(self.centralwidget)
         self.btn_refresh.setGeometry(QtCore.QRect(140, 350, 93, 28))
@@ -147,8 +152,8 @@ class Ui_MainWindow(object):
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))
-        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
-        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
+        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss:ms AP"))
+        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss:ms AP"))
 
     def open_tdmsfile(self):
         name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
@@ -182,10 +187,12 @@ class Ui_MainWindow(object):
         selchannel = self.selectChannel.currentRow()
         channel = channels[selchannel]
 
-        self.plotwidget.update_figure(channel)
-        self.updatetimes(channel)
+        
 
-        #self.selectGroup.set
+        time1 = np.datetime64(self.startTimeInput.dateTime().toPyDateTime())
+        time2 = np.datetime64(self.endTimeInput.dateTime().toPyDateTime())
+        
+        self.plotwidget.update_figure(channel,time1,time2)
 
 
     def updatechannels(self):
@@ -198,23 +205,17 @@ class Ui_MainWindow(object):
         self.selectChannel.clear()
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
+        channel = channels[0]
+        self.updatetimes(channel)
 
     def updatetimes(self,channel):
         timearray = channel.time_track(absolute_time = True, accuracy = 'ms')
         ts_start = (timearray[0] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
         startdatetime = datetime.datetime.utcfromtimestamp(int(ts_start))
-        ts_end = (timearray[0] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+        ts_end = (timearray[-1] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
         enddatetime = datetime.datetime.utcfromtimestamp(int(ts_end))
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
-
-
-
-
-
-
-
-
 
 
 app = QtWidgets.QApplication(sys.argv)

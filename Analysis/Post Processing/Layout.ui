@@ -36,8 +36,11 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="currentSection">
+     <enum>QDateTimeEdit::SecondSection</enum>
+    </property>
     <property name="displayFormat">
-     <string>M/d/yyyy h:mm:ss AP</string>
+     <string>M/d/yyyy h:mm:ss:ms AP</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btn_refresh">
