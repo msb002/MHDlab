@@ -103,6 +103,7 @@ class Ui_MainWindow(object):
         self.btn_parse = QtWidgets.QPushButton(self.centralwidget)
         self.btn_parse.setGeometry(QtCore.QRect(240, 350, 93, 28))
         self.btn_parse.setObjectName("btn_parse")
+        self.btn_parse.clicked.connect(self.cut_tdms_file)
 
         self.btn_open = QtWidgets.QPushButton(self.centralwidget)
         self.btn_open.setGeometry(QtCore.QRect(40, 350, 93, 28))
@@ -185,8 +186,8 @@ class Ui_MainWindow(object):
             self.Logfiletdms = TF(filepath)
 
             folder = os.path.split(filepath)
-            datefolder = os.path.split(folder[0])
-            eventlogpath = os.path.join(datefolder[0],'eventlog.json')
+            self.datefolder = os.path.split(folder[0])[0]
+            eventlogpath = os.path.join(self.datefolder,'eventlog.json')
             with open(eventlogpath) as fp:
                 self.jsonfile = json.load(fp)
             text = json.dumps(self.jsonfile)
@@ -222,6 +223,8 @@ class Ui_MainWindow(object):
             self.folderEdit.setText(folder)
             filename = self.tci[0]['filename'] + '_'+ self.tci[0]['measurementnumber']
             self.filenameEdit.setText(filename)
+            self.filepath = os.path.join(self.datefolder, folder,filename)
+            self.filepath = self.filepath + '.tdms'
 
 
 
@@ -239,11 +242,11 @@ class Ui_MainWindow(object):
         self.updatetimes(channel)
 
     def updatetimes(self,channel):
-        timearray = channel.time_track(absolute_time = True)
+        self.timearray = channel.time_track(absolute_time = True)
         startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(np64_to_unix(timearray[0]))
+        startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
         enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(np64_to_unix(timearray[-1]))
+        enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
 
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
@@ -268,9 +271,44 @@ class Ui_MainWindow(object):
 
         return testcaseinfoarray
 
+    def cut_tdms_file(self):
+
+        timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
+        idx1 = nearest_timeind(timedata,self.time1)
+        idx2 = nearest_timeind(timedata,self.time2)
+
+        data = self.Logfiletdms.as_dataframe()
+
+        data = data[idx1:idx2][:]
+
+        f, ext = os.path.splitext(self.filepath)
+
+        newfile = f + '_cut.tdms'
+
+        dir = os.path.split(f)[0]
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+        root_object = RootObject(properties={
+        "prop1": "foo",
+        "prop2": 3,
+        })
+
+
+        with TdmsWriter(newfile,mode='w') as tdms_writer:
+            for channelstr in data.columns:
+                strsplit = channelstr.split('/')
+                group = strsplit[1].replace("\'","")
+                channel = strsplit[2].replace("\'","")
+
+                channel_object = ChannelObject('Data' , channel, data[channelstr].as_matrix(), properties={})
+                tdms_writer.write_segment([
+                    root_object,
+                    channel_object])
+
 
 def np64_to_utc(np64_dt):
-    utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt))
+    utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt)).replace(tzinfo=pytz.utc)
     return utc_dt
 
 def np64_to_unix(timestamp):
@@ -280,9 +318,9 @@ def labview_to_unix(timestamps):
     newtimestamps = list(map(lambda x: x -2082844800 ,timestamps))
     return newtimestamps
 
-def nearest_timeind(timearray, pivot):   
-    diff = timearray - pivot
-    seconds = np.array(list(map(lambda x: abs(x.total_seconds()),diff)))
+def nearest_timeind(timearray, pivot):
+    diffs =   np.array(list(map(lambda x: abs(x - pivot),timearray))) 
+    seconds = np.array(list(map(lambda x: x.total_seconds(),diffs)))
     return seconds.argmin()
 
 def combine_channels(Fileinfo,group,channel):
@@ -292,55 +330,7 @@ def combine_channels(Fileinfo,group,channel):
         combined = np.append(combined,data)
     return combined
 
-def cut_tdms_file(filepath,timestamps,samplerate):
-    if isinstance(filepath,bytes): #The labview addin passes a bytes instead of string. 
-        filepath = filepath.decode("utf-8")
 
-    timestamps = labview_to_unix(timestamps)
-
-    Logfiletdms = TF(filepath)
-
-    timedata = np.array(Logfiletdms.channel_data('Global','Time'))
-
-    #time1 = timedata[10]
-    #time2 = timedata[20]
-
-    time1 = datetime.datetime.utcfromtimestamp(timestamps[0]).replace(tzinfo=pytz.UTC)
-    time2 = datetime.datetime.utcfromtimestamp(timestamps[1]).replace(tzinfo=pytz.UTC)
-
-    idx1 = nearest_timeind(timedata,time1)
-    idx2 = nearest_timeind(timedata,time2)
-
-    data = Logfiletdms.as_dataframe()
-
-    data = data[idx1*samplerate:idx2*samplerate][:]
-
-    f, ext = os.path.splitext(filepath)
-
-    newfile = f + '_cut.tdms'
-
-    root_object = RootObject(properties={
-    "prop1": "foo",
-    "prop2": 3,
-    })
-
-
-    with TdmsWriter(newfile) as tdms_writer:
-        channel_object = ChannelObject('Global', 'Time', timedata[idx1:idx2], properties={})
-        
-        tdms_writer.write_segment([
-            root_object,
-            channel_object])
-
-        for channelstr in data.columns:
-            strsplit = channelstr.split('/')
-            group = strsplit[1].replace("\'","")
-            channel = strsplit[2].replace("\'","")
-            if(group == 'Data'):
-                channel_object = ChannelObject('Data' , channel, data[channelstr].as_matrix(), properties={})
-                tdms_writer.write_segment([
-                    root_object,
-                    channel_object])
 
 class jsoninfo():
     def __init__(self,filepath):

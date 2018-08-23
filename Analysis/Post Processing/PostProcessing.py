@@ -99,7 +99,6 @@ class jsoninfo():
     def gettestcaseinfo(self,timestamps):
         timestamps = labview_to_unix(timestamps)
         time1 = timestamps[0]
-        print(time1)
 
         times = []
         testcaseinfo = []
