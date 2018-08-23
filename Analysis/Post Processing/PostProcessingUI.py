@@ -139,6 +139,19 @@ class Ui_MainWindow(object):
         self.selectGroup.setObjectName("selectGroup")
         self.selectGroup.itemClicked.connect(self.updatechannels)
 
+        self.folderEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.folderEdit.setGeometry(QtCore.QRect(130, 390, 301, 22))
+        self.folderEdit.setObjectName("folderEdit")
+        self.filenameEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.filenameEdit.setGeometry(QtCore.QRect(130, 420, 301, 22))
+        self.filenameEdit.setObjectName("filenameEdit")
+        self.label_4 = QtWidgets.QLabel(self.centralwidget)
+        self.label_4.setGeometry(QtCore.QRect(40, 390, 55, 16))
+        self.label_4.setObjectName("label_4")
+        self.label_5 = QtWidgets.QLabel(self.centralwidget)
+        self.label_5.setGeometry(QtCore.QRect(40, 420, 55, 16))
+        self.label_5.setObjectName("label_5")
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 771, 26))
@@ -159,7 +172,10 @@ class Ui_MainWindow(object):
         self.btn_open.setText(_translate("MainWindow", "Open File"))
         self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
         self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
-
+        self.label.setText(_translate("MainWindow", "Select Channel"))
+        self.label_2.setText(_translate("MainWindow", "Select Group"))
+        self.label_4.setText(_translate("MainWindow", "Folder"))
+        self.label_5.setText(_translate("MainWindow", "Filename"))
     def open_tdmsfile(self):
         name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
         if(name[0] == ''):
@@ -200,7 +216,12 @@ class Ui_MainWindow(object):
 
         self.plotwidget.update_figure(channel,self.time1,self.time2)
 
-        #text = self.gettestcaseinfo()
+        self.tci = self.gettestcaseinfo()
+        if(len(self.tci)>0):
+            folder = self.tci[0]['project'] + '\\'+ self.tci[0]['subfolder']
+            self.folderEdit.setText(folder)
+            filename = self.tci[0]['filename'] + '_'+ self.tci[0]['measurementnumber']
+            self.filenameEdit.setText(filename)
 
 
 
@@ -231,23 +252,20 @@ class Ui_MainWindow(object):
 
     def gettestcaseinfo(self):
 
-        time1 = np64_to_unix(self.time1)
-        times = []
-        testcaseinfo = []
+        time1 = self.time1
+        time2 = self.time2
+        testcaseinfo = {}
         for event in self.jsonfile:
             if event['event']['type'] == 'TestCaseInfoChange':
-                testcaseinfo.append(event['event']['event info'])
-                times.append(event['dt'])
-        i=0
+                time = datetime.datetime.utcfromtimestamp(event['dt'])
+                time = time.replace(tzinfo=pytz.utc)
+                testcaseinfo[time] = event['event']['event info']
 
-        for time in times:
-            if(time>=time1):
-                break
-            else:
-                i=i+1
+        testcaseinfoarray = []
+        for time, tci in testcaseinfo.items():
+            if(time>time1 and time<=time2):
+                testcaseinfoarray.append(tci)
 
-        tci = testcaseinfo[i]
-        testcaseinfoarray = [tci['project'],tci['subfolder'],tci['filename'],tci['measurementnumber']]
         return testcaseinfoarray
 
 
