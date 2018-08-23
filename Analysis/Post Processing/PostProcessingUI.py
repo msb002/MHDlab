@@ -13,6 +13,7 @@ from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 import datetime
 import pytz
+import tzlocal
 import json
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
@@ -35,11 +36,12 @@ progversion = "0.1"
 
 class MyMplCanvas(FigureCanvas):
     def __init__(self, parent = None, width =5, height = 4, dpi = 100):
-        fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
+        self.fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        
         self.compute_initial_figure()
         
-        FigureCanvas.__init__(self,fig)
+        FigureCanvas.__init__(self,self.fig)
         self.setParent(parent)
 
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
@@ -58,12 +60,15 @@ class MyDynamicMplCanvas(MyMplCanvas):
 
     def update_figure(self,channel,time1,time2):
         timearray = channel.time_track(absolute_time = True)
+        timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        
         data = channel.data
 
-        self.axes.cla()
+        self.axes.cla()        
         self.axes.plot(timearray,data)
-        self.axes.axvline(time1)
+        self.axes.axvline(time1)  ##these vertical lines do not need to be in local time for some reason
         self.axes.axvline(time2)
+        self.fig.autofmt_xdate()
         self.draw()
 
 
@@ -152,8 +157,8 @@ class Ui_MainWindow(object):
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
         self.btn_parse.setText(_translate("MainWindow", "Parse"))
         self.btn_open.setText(_translate("MainWindow", "Open File"))
-        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss:ms AP"))
-        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss:ms AP"))
+        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
+        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
 
     def open_tdmsfile(self):
         name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
@@ -187,12 +192,16 @@ class Ui_MainWindow(object):
         selchannel = self.selectChannel.currentRow()
         channel = channels[selchannel]
 
+        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
+        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
         
+        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
+        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
 
-        time1 = np.datetime64(self.startTimeInput.dateTime().toPyDateTime())
-        time2 = np.datetime64(self.endTimeInput.dateTime().toPyDateTime())
-        
-        self.plotwidget.update_figure(channel,time1,time2)
+        self.plotwidget.update_figure(channel,self.time1,self.time2)
+
+        #text = self.gettestcaseinfo()
+
 
 
     def updatechannels(self):
@@ -209,13 +218,121 @@ class Ui_MainWindow(object):
         self.updatetimes(channel)
 
     def updatetimes(self,channel):
-        timearray = channel.time_track(absolute_time = True, accuracy = 'ms')
-        ts_start = (timearray[0] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
-        startdatetime = datetime.datetime.utcfromtimestamp(int(ts_start))
-        ts_end = (timearray[-1] - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
-        enddatetime = datetime.datetime.utcfromtimestamp(int(ts_end))
+        timearray = channel.time_track(absolute_time = True)
+        startdatetime = QtCore.QDateTime()
+        startdatetime.setTime_t(np64_to_unix(timearray[0]))
+        enddatetime = QtCore.QDateTime()
+        enddatetime.setTime_t(np64_to_unix(timearray[-1]))
+
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
+
+
+
+    def gettestcaseinfo(self):
+
+        time1 = np64_to_unix(self.time1)
+        times = []
+        testcaseinfo = []
+        for event in self.jsonfile:
+            if event['event']['type'] == 'TestCaseInfoChange':
+                testcaseinfo.append(event['event']['event info'])
+                times.append(event['dt'])
+        i=0
+
+        for time in times:
+            if(time>=time1):
+                break
+            else:
+                i=i+1
+
+        tci = testcaseinfo[i]
+        testcaseinfoarray = [tci['project'],tci['subfolder'],tci['filename'],tci['measurementnumber']]
+        return testcaseinfoarray
+
+
+def np64_to_utc(np64_dt):
+    utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt))
+    return utc_dt
+
+def np64_to_unix(timestamp):
+    return (timestamp - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+
+def labview_to_unix(timestamps):
+    newtimestamps = list(map(lambda x: x -2082844800 ,timestamps))
+    return newtimestamps
+
+def nearest_timeind(timearray, pivot):   
+    diff = timearray - pivot
+    seconds = np.array(list(map(lambda x: abs(x.total_seconds()),diff)))
+    return seconds.argmin()
+
+def combine_channels(Fileinfo,group,channel):
+    combined = np.empty(0)
+    for TDMSfile in Fileinfo['TDMSfile']:
+        data = TDMSfile.channel_data(group,channel)
+        combined = np.append(combined,data)
+    return combined
+
+def cut_tdms_file(filepath,timestamps,samplerate):
+    if isinstance(filepath,bytes): #The labview addin passes a bytes instead of string. 
+        filepath = filepath.decode("utf-8")
+
+    timestamps = labview_to_unix(timestamps)
+
+    Logfiletdms = TF(filepath)
+
+    timedata = np.array(Logfiletdms.channel_data('Global','Time'))
+
+    #time1 = timedata[10]
+    #time2 = timedata[20]
+
+    time1 = datetime.datetime.utcfromtimestamp(timestamps[0]).replace(tzinfo=pytz.UTC)
+    time2 = datetime.datetime.utcfromtimestamp(timestamps[1]).replace(tzinfo=pytz.UTC)
+
+    idx1 = nearest_timeind(timedata,time1)
+    idx2 = nearest_timeind(timedata,time2)
+
+    data = Logfiletdms.as_dataframe()
+
+    data = data[idx1*samplerate:idx2*samplerate][:]
+
+    f, ext = os.path.splitext(filepath)
+
+    newfile = f + '_cut.tdms'
+
+    root_object = RootObject(properties={
+    "prop1": "foo",
+    "prop2": 3,
+    })
+
+
+    with TdmsWriter(newfile) as tdms_writer:
+        channel_object = ChannelObject('Global', 'Time', timedata[idx1:idx2], properties={})
+        
+        tdms_writer.write_segment([
+            root_object,
+            channel_object])
+
+        for channelstr in data.columns:
+            strsplit = channelstr.split('/')
+            group = strsplit[1].replace("\'","")
+            channel = strsplit[2].replace("\'","")
+            if(group == 'Data'):
+                channel_object = ChannelObject('Data' , channel, data[channelstr].as_matrix(), properties={})
+                tdms_writer.write_segment([
+                    root_object,
+                    channel_object])
+
+class jsoninfo():
+    def __init__(self,filepath):
+        with open(filepath) as fp:
+            self.jsonfile = json.load(fp)
+
+
+            
+
+
 
 
 app = QtWidgets.QApplication(sys.argv)
