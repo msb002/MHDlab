@@ -34,43 +34,6 @@ from matplotlib.figure import Figure
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
 
-class MyMplCanvas(FigureCanvas):
-    def __init__(self, parent = None, width =5, height = 4, dpi = 100):
-        self.fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
-        
-        self.compute_initial_figure()
-        
-        FigureCanvas.__init__(self,self.fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
-
-        FigureCanvas.updateGeometry(self)
-
-    def compute_initial_figure(self):
-        pass
-
-class MyDynamicMplCanvas(MyMplCanvas):
-    def __init__(self,*args,**kwargs):
-        MyMplCanvas.__init__(self,*args,**kwargs)
-
-    def compute_initial_figure(self):
-        self.axes.plot([], [], 'r')
-
-    def update_figure(self,channel,time1,time2):
-        timearray = channel.time_track(absolute_time = True)
-        timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
-        
-        data = channel.data
-
-        self.axes.cla()        
-        self.axes.plot(timearray,data)
-        self.axes.axvline(time1)  ##these vertical lines do not need to be in local time for some reason
-        self.axes.axvline(time2)
-        self.fig.autofmt_xdate()
-        self.draw()
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -306,6 +269,42 @@ class Ui_MainWindow(object):
                     root_object,
                     channel_object])
 
+class MyMplCanvas(FigureCanvas):
+    def __init__(self, parent = None, width =5, height = 4, dpi = 100):
+        self.fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        
+        self.compute_initial_figure()
+        
+        FigureCanvas.__init__(self,self.fig)
+        self.setParent(parent)
+
+        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+
+        FigureCanvas.updateGeometry(self)
+
+    def compute_initial_figure(self):
+        pass
+
+class MyDynamicMplCanvas(MyMplCanvas):
+    def __init__(self,*args,**kwargs):
+        MyMplCanvas.__init__(self,*args,**kwargs)
+
+    def compute_initial_figure(self):
+        self.axes.plot([], [], 'r')
+
+    def update_figure(self,channel,time1,time2):
+        timearray = channel.time_track(absolute_time = True)
+        timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        
+        data = channel.data
+
+        self.axes.cla()        
+        self.axes.plot(timearray,data)
+        self.axes.axvline(time1)  ##these vertical lines do not need to be in local time for some reason
+        self.axes.axvline(time2)
+        self.fig.autofmt_xdate()
+        self.draw()
 
 def np64_to_utc(np64_dt):
     utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt)).replace(tzinfo=pytz.utc)
@@ -329,16 +328,6 @@ def combine_channels(Fileinfo,group,channel):
         data = TDMSfile.channel_data(group,channel)
         combined = np.append(combined,data)
     return combined
-
-
-
-class jsoninfo():
-    def __init__(self,filepath):
-        with open(filepath) as fp:
-            self.jsonfile = json.load(fp)
-
-
-            
 
 
 
