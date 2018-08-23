@@ -180,7 +180,7 @@ class Ui_MainWindow(object):
 
         self.plotwidget.update_figure(channel,self.time1,self.time2)
 
-        self.tci = self.gettestcaseinfo()
+        self.tci = self.gettestcaseinfo() #TODO display when more than one test case is selected
         if(len(self.tci)>0):
             folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
@@ -242,13 +242,13 @@ class Ui_MainWindow(object):
 
         f, ext = os.path.splitext(self.filepath)
 
-        newfile = f + '_cut.tdms'
+        newfile = f + '_cut.tdms' #TODO add original file name to cut file
 
         dir = os.path.split(f)[0]
         if not os.path.exists(dir):
             os.makedirs(dir)
 
-        root_object = RootObject(properties={
+        root_object = RootObject(properties={ #TODO root properties
         })
 
         with TdmsWriter(newfile,mode='w') as tdms_writer:
@@ -258,7 +258,6 @@ class Ui_MainWindow(object):
                     props = channel.properties
                     start= props['wf_start_time']
                     offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
-                    print(offset)
                     props['wf_start_time'] = start + offset
                     channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
                     tdms_writer.write_segment([
@@ -298,7 +297,7 @@ class MyDynamicMplCanvas(MyMplCanvas):
         self.axes.cla()        
         self.axes.plot(timearray,data)
         self.axes.axvline(time1)  ##these vertical lines do not need to be in local time for some reason
-        self.axes.axvline(time2)
+        self.axes.axvline(time2) #TODO: don't replot every time lines change
         self.fig.autofmt_xdate()
         self.draw()
 
