@@ -15,6 +15,7 @@ import datetime
 import pytz
 import tzlocal
 import json
+import matplotlib as mpl
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
 PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
@@ -50,13 +51,13 @@ class Ui_MainWindow(object):
         self.startTimeInput.setGeometry(QtCore.QRect(40, 310, 194, 22))
         self.startTimeInput.setObjectName("startTimeInput")
         self.startTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
-        self.startTimeInput.dateTimeChanged.connect(self.refresh)
+        self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
 
         self.endTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.endTimeInput.setGeometry(QtCore.QRect(240, 310, 194, 22))
         self.endTimeInput.setObjectName("endTimeInput")
         self.endTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
-        self.endTimeInput.dateTimeChanged.connect(self.refresh)
+        self.endTimeInput.dateTimeChanged.connect(self.refresh_time)
 
         self.btn_refresh = QtWidgets.QPushButton(self.centralwidget)
         self.btn_refresh.setGeometry(QtCore.QRect(140, 350, 93, 28))
@@ -140,14 +141,15 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Select Group"))
         self.label_4.setText(_translate("MainWindow", "Folder"))
         self.label_5.setText(_translate("MainWindow", "Filename"))
-    def open_tdmsfile(self):
-        name = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
-        if(name[0] == ''):
+
+    def open_tdmsfile(self, filepath= 0):
+        if(filepath == 0):
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
+            filepath = paths[0]
+        if(filepath == ''):
             pass
         else:
-            filepath = name[0]
             self.Logfiletdms = TF(filepath)
-
             folder = os.path.split(filepath)
             self.datefolder = os.path.split(folder[0])[0]
             eventlogpath = os.path.join(self.datefolder,'eventlog.json')
@@ -161,9 +163,16 @@ class Ui_MainWindow(object):
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
 
-            self.updatechannels()
+            self.updatechannels() 
+            self.refresh()      
 
-
+    def refresh_time(self):
+        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
+        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
+        
+        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
+        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
+        self.plotwidget.update_time(self.time1,self.time2)
 
     def refresh(self):
         
@@ -172,13 +181,8 @@ class Ui_MainWindow(object):
         selchannel = self.selectChannel.currentRow()
         channel = channels[selchannel]
 
-        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
-        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
-        
-        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
-        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
-
-        self.plotwidget.update_figure(channel,self.time1,self.time2)
+        self.plotwidget.update_data(channel)
+        self.refresh_time()
 
         self.tci = self.gettestcaseinfo() #TODO display when more than one test case is selected
         if(len(self.tci)>0):
@@ -286,19 +290,39 @@ class MyDynamicMplCanvas(MyMplCanvas):
         MyMplCanvas.__init__(self,*args,**kwargs)
 
     def compute_initial_figure(self):
-        self.axes.plot([], [], 'r')
+        self.dataline, = self.axes.plot([], [], 'r')
+        self.timeline1 = mpl.lines.Line2D([0],[0])  ##these vertical lines do not need to be in local time for some reason
+        self.timeline2 = mpl.lines.Line2D([0],[0])
 
-    def update_figure(self,channel,time1,time2):
+
+    def update_data(self,channel):
         timearray = channel.time_track(absolute_time = True)
         timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
         
         data = channel.data
 
-        self.axes.cla()        
-        self.axes.plot(timearray,data)
-        self.axes.axvline(time1)  ##these vertical lines do not need to be in local time for some reason
-        self.axes.axvline(time2) #TODO: don't replot every time lines change
-        self.fig.autofmt_xdate()
+        if self.dataline in self.axes.lines:
+            self.axes.lines.remove(self.dataline)
+
+        self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b')
+        self.axes.set_xlim(min(timearray),max(timearray))
+
+        self.draw()
+
+    def update_time(self,time1,time2):
+        
+        if self.timeline1 in self.axes.lines:
+            self.axes.lines.remove(self.timeline1)
+        
+        if self.timeline2 in self.axes.lines:
+            self.axes.lines.remove(self.timeline2)
+        
+
+        self.timeline1 = self.axes.axvline(time1, linestyle = '--', color = 'gray')  ##these vertical lines do not need to be in local time for some reason
+        self.timeline2 = self.axes.axvline(time2, linestyle = '--',  color = 'gray') #TODO: don't replot every time lines change
+        
+        
+        #self.fig.autofmt_xdate()
         self.draw()
 
 def np64_to_utc(np64_dt):
@@ -334,5 +358,6 @@ ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
 MainWindow.show()
 
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-08-22\\Sensors\\Log_Sensors_DAQ_5.tdms')
 
 sys.exit(app.exec_())
