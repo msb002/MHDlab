@@ -155,8 +155,7 @@ class Ui_MainWindow(object):
             eventlogpath = os.path.join(self.datefolder,'eventlog.json')
             with open(eventlogpath) as fp:
                 self.jsonfile = json.load(fp)
-            text = json.dumps(self.jsonfile)
-            self.textBrowser.setText(text)
+            
             
             self.groups = self.Logfiletdms.groups()
             self.selectGroup.clear()
@@ -195,6 +194,7 @@ class Ui_MainWindow(object):
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
         self.plotwidget.update_time(self.time1,self.time2)
+        self.cut_eventlog()
 
     def refresh(self):
         selgroup = self.selectGroup.currentRow()
@@ -204,6 +204,8 @@ class Ui_MainWindow(object):
 
         self.plotwidget.update_data(channel)
         self.refresh_time()
+        self.cut_eventlog()
+        self.display_eventlog()
 
         self.tci = self.gettestcaseinfo() #TODO display when more than one test case is selected
         if(len(self.tci)>0):
@@ -214,6 +216,27 @@ class Ui_MainWindow(object):
             self.filepath = os.path.join(self.datefolder, folder,filename)
             self.filepath = self.filepath + '.tdms'
 
+    def cut_eventlog(self):
+        self.eventlog_cut= []
+        for event in self.jsonfile:
+            time = datetime.datetime.utcfromtimestamp(event['dt'])
+            time = time.replace(tzinfo=pytz.utc)
+            if((time>self.time1) and (time<self.time2)):
+                self.eventlog_cut.append(event)
+        self.display_eventlog()
+        
+        #print(self.eventlog_cut)
+
+    def display_eventlog(self):
+        string = ''
+
+        for event in self.eventlog_cut:
+            time = datetime.datetime.utcfromtimestamp(event['dt'])
+            string += time.strftime('%H:%M:%S') + ' - '
+            string += json.dumps(event['event'])
+            string += '\r\n'
+        
+        self.textBrowser.setText(string)
 
 
     def gettestcaseinfo(self):
@@ -284,9 +307,8 @@ class MyDynamicMplCanvas(MyMplCanvas):
 
     def compute_initial_figure(self):
         self.dataline, = self.axes.plot([], [], 'r')
-        self.timeline1 = mpl.lines.Line2D([0],[0])  ##these vertical lines do not need to be in local time for some reason
+        self.timeline1 = mpl.lines.Line2D([0],[0])
         self.timeline2 = mpl.lines.Line2D([0],[0])
-
 
     def update_data(self,channel):
         timearray = channel.time_track(absolute_time = True)
@@ -310,12 +332,10 @@ class MyDynamicMplCanvas(MyMplCanvas):
         if self.timeline2 in self.axes.lines:
             self.axes.lines.remove(self.timeline2)
         
-
-        self.timeline1 = self.axes.axvline(time1, linestyle = '--', color = 'gray')  ##these vertical lines do not need to be in local time for some reason
-        self.timeline2 = self.axes.axvline(time2, linestyle = '--',  color = 'gray') #TODO: don't replot every time lines change
+        ##these vertical lines do not need to be in local time for some reason
+        self.timeline1 = self.axes.axvline(time1, linestyle = '--', color = 'gray')  
+        self.timeline2 = self.axes.axvline(time2, linestyle = '--',  color = 'gray') 
         
-        
-        #self.fig.autofmt_xdate()
         self.draw()
 
 def np64_to_utc(np64_dt):
