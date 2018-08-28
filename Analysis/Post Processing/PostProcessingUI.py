@@ -207,7 +207,7 @@ class Ui_MainWindow(object):
         self.cut_eventlog()
         self.display_eventlog()
 
-        self.tci = self.gettestcaseinfo() #TODO display when more than one test case is selected
+        self.tci = self.gettestcaseinfo() 
         if(len(self.tci)>0):
             folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
@@ -229,14 +229,17 @@ class Ui_MainWindow(object):
 
     def display_eventlog(self):
         string = ''
-
+        times = []
         for event in self.eventlog_cut:
             time = datetime.datetime.utcfromtimestamp(event['dt'])
             string += time.strftime('%H:%M:%S') + ' - '
             string += json.dumps(event['event'])
             string += '\r\n'
+            time = time.replace(tzinfo=pytz.utc)
+            times.append(time)
         
         self.textBrowser.setText(string)
+        self.plotwidget.update_eventticks(times)
 
 
     def gettestcaseinfo(self):
@@ -249,7 +252,7 @@ class Ui_MainWindow(object):
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
-            if(time<self.time1): #TODO: add indicator if another event is in the window
+            if(time<self.time1): 
                 testcaseinfoarray.append(tci)
 
         return testcaseinfoarray
@@ -309,6 +312,7 @@ class MyDynamicMplCanvas(MyMplCanvas):
         self.dataline, = self.axes.plot([], [], 'r')
         self.timeline1 = mpl.lines.Line2D([0],[0])
         self.timeline2 = mpl.lines.Line2D([0],[0])
+        self.eventticks = [mpl.lines.Line2D([0],[0])]
 
     def update_data(self,channel):
         timearray = channel.time_track(absolute_time = True)
@@ -335,6 +339,18 @@ class MyDynamicMplCanvas(MyMplCanvas):
         ##these vertical lines do not need to be in local time for some reason
         self.timeline1 = self.axes.axvline(time1, linestyle = '--', color = 'gray')  
         self.timeline2 = self.axes.axvline(time2, linestyle = '--',  color = 'gray') 
+        
+        self.draw()
+
+    def update_eventticks(self,times):
+        for line in self.eventticks:
+            if line in self.axes.lines:
+                self.axes.lines.remove(line)
+        
+        for time in times:
+            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = 'red'))
+        ##these vertical lines do not need to be in local time for some reason
+        
         
         self.draw()
 
