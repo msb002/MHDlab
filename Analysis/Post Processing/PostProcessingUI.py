@@ -325,6 +325,7 @@ class MyDynamicMplCanvas(MyMplCanvas):
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b')
         self.axes.set_xlim(min(timearray),max(timearray))
+        self.axes.set_ylim(min(data),max(data))
 
         self.draw()
 
