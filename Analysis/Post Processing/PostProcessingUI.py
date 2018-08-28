@@ -102,7 +102,7 @@ class Ui_MainWindow(object):
         self.selectGroup.setWordWrap(False)
         self.selectGroup.setSelectionRectVisible(False)
         self.selectGroup.setObjectName("selectGroup")
-        self.selectGroup.itemClicked.connect(self.updatechannels)
+        self.selectGroup.itemClicked.connect(self.update_channel_display)
 
         self.folderEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.folderEdit.setGeometry(QtCore.QRect(130, 390, 301, 22))
@@ -163,8 +163,30 @@ class Ui_MainWindow(object):
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
 
-            self.updatechannels() 
+            self.update_channel_display() 
             self.refresh()      
+
+    def update_channel_display(self):
+        selgroup = self.selectGroup.currentRow()
+        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+        channelnamelist = []
+        for channel in channels:
+            channelnamelist.append(channel.channel)
+        self.selectChannel.clear()
+        self.selectChannel.insertItems(0,channelnamelist)
+        self.selectChannel.setCurrentRow(0)
+        channel = channels[0]
+        self.update_time_displays(channel)
+
+    def update_time_displays(self,channel):
+        self.timearray = channel.time_track(absolute_time = True)
+        startdatetime = QtCore.QDateTime()
+        startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
+        enddatetime = QtCore.QDateTime()
+        enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
+
+        self.startTimeInput.setDateTime(startdatetime)
+        self.endTimeInput.setDateTime(enddatetime)
 
     def refresh_time(self):
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
@@ -175,7 +197,6 @@ class Ui_MainWindow(object):
         self.plotwidget.update_time(self.time1,self.time2)
 
     def refresh(self):
-        
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         selchannel = self.selectChannel.currentRow()
@@ -195,35 +216,7 @@ class Ui_MainWindow(object):
 
 
 
-    def updatechannels(self):
-        selgroup = self.selectGroup.currentRow()
-        
-        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-        channelnamelist = []
-        for channel in channels:
-            channelnamelist.append(channel.channel)
-        self.selectChannel.clear()
-        self.selectChannel.insertItems(0,channelnamelist)
-        self.selectChannel.setCurrentRow(0)
-        channel = channels[0]
-        self.updatetimes(channel)
-
-    def updatetimes(self,channel):
-        self.timearray = channel.time_track(absolute_time = True)
-        startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
-        enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
-
-        self.startTimeInput.setDateTime(startdatetime)
-        self.endTimeInput.setDateTime(enddatetime)
-
-
-
     def gettestcaseinfo(self):
-
-        time1 = self.time1
-        time2 = self.time2
         testcaseinfo = {}
         for event in self.jsonfile:
             if event['event']['type'] == 'TestCaseInfoChange':
@@ -233,7 +226,7 @@ class Ui_MainWindow(object):
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
-            if(time<time1): #TODO: add indicator if another event is in the window
+            if(time<self.time1): #TODO: add indicator if another event is in the window
                 testcaseinfoarray.append(tci)
 
         return testcaseinfoarray
@@ -248,9 +241,9 @@ class Ui_MainWindow(object):
 
         newfile = f + '_cut.tdms' #TODO add original file name to cut file
 
-        dir = os.path.split(f)[0]
-        if not os.path.exists(dir):
-            os.makedirs(dir)
+        direc = os.path.split(f)[0]
+        if not os.path.exists(direc):
+            os.makedirs(direc)
 
         root_object = RootObject(properties={ #TODO root properties
         })
