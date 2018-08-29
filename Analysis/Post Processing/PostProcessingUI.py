@@ -207,14 +207,7 @@ class Ui_MainWindow(object):
         self.cut_eventlog()
         self.display_eventlog()
 
-        self.tci = self.gettestcaseinfo() 
-        if(len(self.tci)>0):
-            folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
-            self.folderEdit.setText(folder)
-            filename = self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
-            self.filenameEdit.setText(filename)
-            self.filepath = os.path.join(self.datefolder, folder,filename)
-            self.filepath = self.filepath + '.tdms'
+
 
     def cut_eventlog(self):
         self.eventlog_cut= []
@@ -224,31 +217,42 @@ class Ui_MainWindow(object):
             if((time>self.time1) and (time<self.time2)):
                 self.eventlog_cut.append(event)
         self.display_eventlog()
-        
-        #print(self.eventlog_cut)
 
     def display_eventlog(self):
         string = ''
-        times = []
+
         for event in self.eventlog_cut:
             time = datetime.datetime.utcfromtimestamp(event['dt'])
             string += time.strftime('%H:%M:%S') + ' - '
             string += json.dumps(event['event'])
             string += '\r\n'
-            time = time.replace(tzinfo=pytz.utc)
-            times.append(time)
+
         
         self.textBrowser.setText(string)
-        self.plotwidget.update_eventticks(times)
+        
+
+        self.tci = self.gettestcaseinfo() 
+
+        if(len(self.tci)>0):
+            folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
+            self.folderEdit.setText(folder)
+            filename = self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
+            self.filenameEdit.setText(filename)
+            self.filepath = os.path.join(self.datefolder, folder,filename)
+            self.filepath = self.filepath + '.tdms'
 
 
     def gettestcaseinfo(self):
         testcaseinfo = {}
+        times = []
         for event in self.jsonfile:
             if event['event']['type'] == 'TestCaseInfoChange':
                 time = datetime.datetime.utcfromtimestamp(event['dt'])
                 time = time.replace(tzinfo=pytz.utc)
                 testcaseinfo[time] = event['event']['event info']
+                times.append(time)
+
+        self.plotwidget.update_eventticks(times)
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
