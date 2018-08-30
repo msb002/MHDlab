@@ -13,7 +13,7 @@ from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 import datetime
 import pytz
-import tzlocal
+from daytime import tzlocal
 import json
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
