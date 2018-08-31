@@ -17,6 +17,8 @@ import tzlocal
 import json
 import matplotlib as mpl
 
+import layout
+
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
 PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
 if not PythonAnalysisPath in sys.path:
@@ -36,111 +38,17 @@ progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
 
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(771, 508)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-
+class Ui_MainWindow(layout.Ui_MainWindow):
+    def link_buttons(self):
         self.plotwidget = MyDynamicMplCanvas(self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(QtCore.QRect(40, 40, 381, 241))
         self.plotwidget.setObjectName("widget")
-
-        self.startTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
-        self.startTimeInput.setGeometry(QtCore.QRect(40, 310, 194, 22))
-        self.startTimeInput.setObjectName("startTimeInput")
-        self.startTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
         self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
-
-        self.endTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
-        self.endTimeInput.setGeometry(QtCore.QRect(240, 310, 194, 22))
-        self.endTimeInput.setObjectName("endTimeInput")
-        self.endTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.SecondSection)
         self.endTimeInput.dateTimeChanged.connect(self.refresh_time)
-
-        self.btn_refresh = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_refresh.setGeometry(QtCore.QRect(140, 350, 93, 28))
-        self.btn_refresh.setObjectName("btn_refresh")
         self.btn_refresh.clicked.connect(self.refresh)
-
-        self.btn_parse = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_parse.setGeometry(QtCore.QRect(240, 350, 93, 28))
-        self.btn_parse.setObjectName("btn_parse")
         self.btn_parse.clicked.connect(self.cut_tdms_file)
-
-        self.btn_open = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_open.setGeometry(QtCore.QRect(40, 350, 93, 28))
-        self.btn_open.setObjectName("btn_open")
         self.btn_open.clicked.connect(self.open_tdmsfile)
-
-        self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
-        self.textBrowser.setGeometry(QtCore.QRect(450, 40, 301, 250))
-        self.textBrowser.setObjectName("textBrowser")
-
-        self.selectChannel = QtWidgets.QListWidget(self.centralwidget)
-        self.selectChannel.setGeometry(QtCore.QRect(600, 320, 151, 151))
-        self.selectChannel.setProperty("isWrapping", False)
-        self.selectChannel.setResizeMode(QtWidgets.QListView.Fixed)
-        self.selectChannel.setViewMode(QtWidgets.QListView.ListMode)
-        self.selectChannel.setModelColumn(0)
-        self.selectChannel.setWordWrap(False)
-        self.selectChannel.setSelectionRectVisible(False)
-        self.selectChannel.setObjectName("selectChannel")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(620, 290, 91, 20))
-        self.label.setObjectName("label")
-        self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(460, 290, 91, 20))
-        self.label_2.setObjectName("label_2")
-        self.selectGroup = QtWidgets.QListWidget(self.centralwidget)
-        self.selectGroup.setGeometry(QtCore.QRect(450, 320, 141, 151))
-        self.selectGroup.setProperty("isWrapping", False)
-        self.selectGroup.setResizeMode(QtWidgets.QListView.Fixed)
-        self.selectGroup.setViewMode(QtWidgets.QListView.ListMode)
-        self.selectGroup.setModelColumn(0)
-        self.selectGroup.setWordWrap(False)
-        self.selectGroup.setSelectionRectVisible(False)
-        self.selectGroup.setObjectName("selectGroup")
         self.selectGroup.itemClicked.connect(self.update_channel_display)
-
-        self.folderEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.folderEdit.setGeometry(QtCore.QRect(130, 390, 301, 22))
-        self.folderEdit.setObjectName("folderEdit")
-        self.filenameEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.filenameEdit.setGeometry(QtCore.QRect(130, 420, 301, 22))
-        self.filenameEdit.setObjectName("filenameEdit")
-        self.label_4 = QtWidgets.QLabel(self.centralwidget)
-        self.label_4.setGeometry(QtCore.QRect(40, 390, 55, 16))
-        self.label_4.setObjectName("label_4")
-        self.label_5 = QtWidgets.QLabel(self.centralwidget)
-        self.label_5.setGeometry(QtCore.QRect(40, 420, 55, 16))
-        self.label_5.setObjectName("label_5")
-
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 771, 26))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MHDLab PostProcessor"))
-        self.btn_refresh.setText(_translate("MainWindow", "Refresh"))
-        self.btn_parse.setText(_translate("MainWindow", "Parse"))
-        self.btn_open.setText(_translate("MainWindow", "Open File"))
-        self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
-        self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
-        self.label.setText(_translate("MainWindow", "Select Channel"))
-        self.label_2.setText(_translate("MainWindow", "Select Group"))
-        self.label_4.setText(_translate("MainWindow", "Folder"))
-        self.label_5.setText(_translate("MainWindow", "Filename"))
 
     def open_tdmsfile(self, filepath= 0):
         if(filepath == 0):
@@ -396,6 +304,7 @@ app = QtWidgets.QApplication(sys.argv)
 MainWindow = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
+ui.link_buttons()
 MainWindow.show()
 
 ui.open_tdmsfile('C:\\Labview Test Data\\2018-08-22\\Sensors\\Log_Sensors_DAQ_5.tdms')
