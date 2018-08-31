@@ -328,7 +328,13 @@ class MyDynamicMplCanvas(MyMplCanvas):
             self.axes.lines.remove(self.dataline)
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b')
-        self.axes.set_xlim(min(timearray),max(timearray))
+
+        mintime = min(timearray)
+        maxtime = max(timearray)
+        padtime = (maxtime-mintime)/10
+
+        self.axes.set_xlim(mintime - padtime,maxtime + padtime)
+        self.fig.autofmt_xdate()
         self.axes.set_ylim(min(data),max(data))
 
         self.draw()
