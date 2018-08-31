@@ -13,12 +13,12 @@ from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 import datetime
 import pytz
-from daytime import tzlocal
+import tzlocal
 import json
 import matplotlib as mpl
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
+PythonAnalysisPath = 'C:\\Users\\bowenm\\Github\\MHDLab\\Python Analysis'
 if not PythonAnalysisPath in sys.path:
     sys.path.append(PythonAnalysisPath)
 

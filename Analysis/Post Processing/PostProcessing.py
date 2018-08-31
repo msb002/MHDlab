@@ -20,7 +20,7 @@ import pytz
 import json
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
+PythonAnalysisPath = 'C:\\Users\\bowenm\\Documents\\Github\\MHDLab\\Python Analysis'
 if not PythonAnalysisPath in sys.path:
     sys.path.append(PythonAnalysisPath)
 
