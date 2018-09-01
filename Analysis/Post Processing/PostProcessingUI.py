@@ -117,7 +117,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget.update_data(channel)
         self.refresh_time()
         self.cut_eventlog()
-        self.display_eventlog()
 
 
 
