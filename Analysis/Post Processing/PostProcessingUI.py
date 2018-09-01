@@ -74,6 +74,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.refresh()      
 
     def update_channel_display(self):
+        #Updates the channel list to display channels in selected group
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         channelnamelist = []
@@ -86,6 +87,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.update_time_displays(channel)
 
     def update_time_displays(self,channel):
+        #updates the time inputs to max and min of channel
         self.timearray = channel.time_track(absolute_time = True)
         startdatetime = QtCore.QDateTime()
         startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
@@ -96,6 +98,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.endTimeInput.setDateTime(enddatetime)
 
     def refresh_time(self):
+        #pull the time from the inputs and update the gray lines on the display and cut event log
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
         self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
         
@@ -105,6 +108,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.cut_eventlog()
 
     def refresh(self):
+        #full refresh of everything
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         selchannel = self.selectChannel.currentRow()
@@ -118,6 +122,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 
     def cut_eventlog(self):
+        #create array of events within the time window
         self.eventlog_cut= []
         for event in self.jsonfile:
             time = datetime.datetime.utcfromtimestamp(event['dt'])
@@ -127,6 +132,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.display_eventlog()
 
     def display_eventlog(self):
+        #refresh the cut eventlog in the text display
         string = ''
 
         for event in self.eventlog_cut:
@@ -134,10 +140,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             string += time.strftime('%H:%M:%S') + ' - '
             string += json.dumps(event['event'])
             string += '\r\n'
-
         
         self.textBrowser.setText(string)
-        
 
         self.tci = self.gettestcaseinfo() 
 
@@ -151,6 +155,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 
     def gettestcaseinfo(self):
+        #pull the testcase info from the json file
         testcaseinfo = {}
         times = []
         for event in self.jsonfile:
