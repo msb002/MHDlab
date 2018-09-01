@@ -60,7 +60,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.Logfiletdms = TF(filepath)
             folder = os.path.split(filepath)
             self.datefolder = os.path.split(folder[0])[0]
-            eventlogpath = os.path.join(self.datefolder,'eventlog.json')
+            eventlogpath = os.path.join(self.datefolder,'Eventlog.json')
             with open(eventlogpath) as fp:
                 self.jsonfile = json.load(fp)
             
@@ -307,6 +307,8 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-ui.open_tdmsfile('C:\\Labview Test Data\\2018-08-22\\Sensors\\Log_Sensors_DAQ_5.tdms')
+#ui.open_tdmsfile('C:\\Labview Test Data\\2018-08-22\\Sensors\\Log_Sensors_DAQ_5.tdms') #Windows
+ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
+
 
 sys.exit(app.exec_())
