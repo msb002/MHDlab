@@ -41,7 +41,7 @@ progversion = "0.1"
 class Ui_MainWindow(layout.Ui_MainWindow):
     def link_buttons(self):
         self.plotwidget = MyDynamicMplCanvas(self.centralwidget, width = 5, height = 4, dpi = 100)
-        self.plotwidget.setGeometry(QtCore.QRect(40, 40, 381, 241))
+        self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
         self.plotwidget.setObjectName("widget")
         self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
         self.endTimeInput.dateTimeChanged.connect(self.refresh_time)
@@ -236,6 +236,9 @@ class MyDynamicMplCanvas(MyMplCanvas):
         
         data = channel.data
 
+        x_label  = 'Time'
+        y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
+
         if self.dataline in self.axes.lines:
             self.axes.lines.remove(self.dataline)
 
@@ -248,6 +251,10 @@ class MyDynamicMplCanvas(MyMplCanvas):
         self.axes.set_xlim(mintime - padtime,maxtime + padtime)
         self.fig.autofmt_xdate()
         self.axes.set_ylim(min(data),max(data))
+        
+        self.axes.set_xlabel(x_label)
+        self.axes.set_ylabel(y_label)
+        self.fig.tight_layout()
 
         self.draw()
 
