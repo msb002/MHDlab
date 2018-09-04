@@ -57,6 +57,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(filepath == ''):
             pass
         else:
+            
+            self.origfilename = os.path.splitext(os.path.split(filepath)[1])[0]
+
             self.Logfiletdms = TF(filepath)
             folder = os.path.split(filepath)
             self.datefolder = os.path.split(folder[0])[0]
@@ -147,10 +150,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(len(self.tci)>0):
             folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
-            filename = self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
+            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
             self.filenameEdit.setText(filename)
-            self.filepath = os.path.join(self.datefolder, folder,filename)
-            self.filepath = self.filepath + '.tdms'
+            self.filepath = os.path.join(self.datefolder, folder, filename)
+            self.filepath =   self.filepath + '.tdms'
 
 
     def gettestcaseinfo(self):
