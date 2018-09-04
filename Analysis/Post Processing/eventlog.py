@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
 import json
 import time
 
@@ -40,9 +35,6 @@ def initialize():
             write_file.write('[\n')
         json.dump(event, write_file)
 
-
-
-
 def shutdown():
     event = {
     "dt": time.time(),
@@ -57,9 +49,26 @@ def shutdown():
         write_file.write('\n]')
 
 
+
+
 def TestCaseInfoChange(TestDataInfo):
     for idx, string in  enumerate(TestDataInfo):
         TestDataInfo[idx] = string.decode("utf-8")
+
+    # with open(Eventlogfile,'r') as read_file:
+    #     contents = read_file.read()
+
+    # print(contents)
+
+    # existing_tci_arr = []
+    # for event in contents:
+    #     if event['event']['type'] == 'TestCaseInfoChange':
+    #         eventinfo = event['event']['event info']
+    #         existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
+            
+    # for existing_tci in existing_tci_arr:
+    #     if(existing_tci == TestDataInfo):
+    #         return 0
     
     project = TestDataInfo[0]
     subfolder = TestDataInfo[1]
@@ -80,6 +89,8 @@ def TestCaseInfoChange(TestDataInfo):
     }
 
     writeevent(event)
+
+    return 1
 
 
 def RunningVIsChange(VIname,OnOff):
