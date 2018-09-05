@@ -3,24 +3,18 @@ import json
 import time
 import pathlib
 
-#Eventlogfile = ""
-
 def writeevent(Eventlogfile, event):
     with open(Eventlogfile, "r") as read_file:
         try:
             eventloglist = json.load(read_file)
-        except ValueError:
-            print('hello')
+        except ValueError: #Empty file
             eventloglist = []
     with open(Eventlogfile, "w") as write_file:
         eventloglist.append(event)
         json.dump(eventloglist, write_file, indent=2) 
 
-
-
 class Eventlog():
     def __init__(self,Eventlogfile):
-        #global Eventlogfile
         self.Eventlogfile = Eventlogfile
         if isinstance(self.Eventlogfile,bytes): #The labview addin passes a bytes instead of string. 
             self.Eventlogfile = self.Eventlogfile.decode("utf-8")
@@ -44,9 +38,6 @@ class Eventlog():
 
         writeevent(self.Eventlogfile, event)
 
-
-
-
     def TestCaseInfoChange(self, TestDataInfo):
         for idx, string in  enumerate(TestDataInfo):
             TestDataInfo[idx] = string.decode("utf-8")
@@ -62,7 +53,7 @@ class Eventlog():
                 
         for existing_tci in existing_tci_arr:
             if(existing_tci == TestDataInfo).all():
-                return False
+                return False #Existing test case info
         
         project = TestDataInfo[0]
         subfolder = TestDataInfo[1]
@@ -84,8 +75,7 @@ class Eventlog():
 
         writeevent(self.Eventlogfile, event)
 
-        return True
-
+        return True #was no existing test case info
 
     def RunningVIsChange(self,VIname,OnOff):
         event = {
@@ -99,8 +89,7 @@ class Eventlog():
             }
         }
 
-        writeevent(self.Eventlogfile,event)
-
+        writeevent(self.Eventlogfile,event) 
 
     def SavingVIsChange(self, VIname,OnOff):
         event = {
