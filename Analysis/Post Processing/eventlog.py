@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 import json
 import time
+import pathlib
 
 #Eventlogfile = ""
 
 def writeevent(Eventlogfile, event):
-    with open(Eventlogfile, "a") as write_file:
-        write_file.write(',\n')
-        json.dump(event, write_file)
+    with open(Eventlogfile, "r") as read_file:
+        try:
+            eventloglist = json.load(read_file)
+        except ValueError:
+            print('hello')
+            eventloglist = []
+    with open(Eventlogfile, "w") as write_file:
+        eventloglist.append(event)
+        json.dump(eventloglist, write_file, indent=2) 
+
 
 
 class Eventlog():
@@ -24,23 +32,8 @@ class Eventlog():
         } 
         }
 
-        with open(self.Eventlogfile) as fp:
-            self.jsonfile = json.load(fp)
-
-        with open(self.Eventlogfile,'r') as read_file:
-            contents = read_file.read()
-
-        with open(self.Eventlogfile,'a') as write_file:
-            if(len(contents) > 0):
-                if(contents[-1] == ']'):
-                    length = write_file.seek(0,2)
-                    write_file.seek(length-2)
-                    write_file.truncate()
-                    write_file.write(',\n')
-            else:
-                write_file.write('[\n')
-            json.dump(event, write_file)  
-
+        writeevent(self.Eventlogfile, event)
+            
     def shutdown(self):
         event = {
         "dt": time.time(),
@@ -51,15 +44,16 @@ class Eventlog():
 
         writeevent(self.Eventlogfile, event)
 
-        with open(self.Eventlogfile,'a') as write_file:
-            write_file.write('\n]')
+
 
 
     def TestCaseInfoChange(self, TestDataInfo):
         for idx, string in  enumerate(TestDataInfo):
             TestDataInfo[idx] = string.decode("utf-8")
 
-
+        with open(self.Eventlogfile,'r') as read_file:
+            self.jsonfile = json.load(read_file)
+        
         existing_tci_arr = []
         for event in self.jsonfile:
             if (event['event']['type'] == 'TestCaseInfoChange'):
