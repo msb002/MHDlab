@@ -145,12 +145,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.textBrowser.setText(string)
 
-        self.tci = self.gettestcaseinfo() 
+        self.tci = self.gettestcaseinfo()
 
         if(len(self.tci)>0):
             folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
-            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[0]['measurementnumber']
+            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[-1]['measurementnumber']
             self.filenameEdit.setText(filename)
             self.filepath = os.path.join(self.datefolder, folder, filename)
             self.filepath =   self.filepath + '.tdms'
