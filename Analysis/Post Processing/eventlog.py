@@ -52,78 +52,73 @@ class Eventlog():
             write_file.write('\n]')
 
 
+    def TestCaseInfoChange(self, TestDataInfo):
+        for idx, string in  enumerate(TestDataInfo):
+            TestDataInfo[idx] = string.decode("utf-8")
+
+        # with open(Eventlogfile,'r') as read_file:
+        #     contents = read_file.read()
+
+        # print(contents)
+
+        # existing_tci_arr = []
+        # for event in contents:
+        #     if event['event']['type'] == 'TestCaseInfoChange':
+        #         eventinfo = event['event']['event info']
+        #         existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
+                
+        # for existing_tci in existing_tci_arr:
+        #     if(existing_tci == TestDataInfo):
+        #         return 0
+        
+        project = TestDataInfo[0]
+        subfolder = TestDataInfo[1]
+        filename = TestDataInfo[2]
+        measurementnumber = TestDataInfo[3]
+
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "TestCaseInfoChange",
+            "event info": {
+                "project": project,
+                "subfolder": subfolder,
+                "filename": filename,
+                "measurementnumber": measurementnumber 
+                }
+            }
+        }
+
+        writeevent(self.Eventlogfile, event)
+
+        return 1
 
 
+    def RunningVIsChange(self,VIname,OnOff):
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "VIRunningChange",
+            "event info": {
+                "name" : VIname.decode("utf-8"),
+                "newstate" : OnOff
+                }
+            }
+        }
+
+        writeevent(self.Eventlogfile,event)
 
 
+    def SavingVIsChange(self, VIname,OnOff):
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "VISavingChange",
+            "event info": {
+                "name" : VIname.decode("utf-8"),
+                "newstate" : OnOff
+                }
+            }
+        }
 
-# def TestCaseInfoChange(TestDataInfo):
-#     for idx, string in  enumerate(TestDataInfo):
-#         TestDataInfo[idx] = string.decode("utf-8")
-
-#     # with open(Eventlogfile,'r') as read_file:
-#     #     contents = read_file.read()
-
-#     # print(contents)
-
-#     # existing_tci_arr = []
-#     # for event in contents:
-#     #     if event['event']['type'] == 'TestCaseInfoChange':
-#     #         eventinfo = event['event']['event info']
-#     #         existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
-            
-#     # for existing_tci in existing_tci_arr:
-#     #     if(existing_tci == TestDataInfo):
-#     #         return 0
-    
-#     project = TestDataInfo[0]
-#     subfolder = TestDataInfo[1]
-#     filename = TestDataInfo[2]
-#     measurementnumber = TestDataInfo[3]
-
-#     event = {
-#     "dt": time.time(),
-#     "event": {
-#         "type" : "TestCaseInfoChange",
-#         "event info": {
-#             "project": project,
-#             "subfolder": subfolder,
-#             "filename": filename,
-#             "measurementnumber": measurementnumber 
-#             }
-#         }
-#     }
-
-#     writeevent(event)
-
-#     return 1
-
-
-# def RunningVIsChange(VIname,OnOff):
-#     event = {
-#     "dt": time.time(),
-#     "event": {
-#         "type" : "VIRunningChange",
-#         "event info": {
-#             "name" : VIname.decode("utf-8"),
-#             "newstate" : OnOff
-#             }
-#         }
-#     }
-
-#     writeevent(event)
-
-
-# def SavingVIsChange(VIname,OnOff):
-#     event = {
-#     "dt": time.time(),
-#     "event": {
-#         "type" : "VISavingChange",
-#         "event info": {
-#             "name" : VIname.decode("utf-8"),
-#             "newstate" : OnOff
-#             }
-#         }
-#     }
-
-#     writeevent(event)
+        writeevent(self.Eventlogfile,event)
