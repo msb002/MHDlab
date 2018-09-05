@@ -24,6 +24,9 @@ class Eventlog():
         } 
         }
 
+        with open(self.Eventlogfile) as fp:
+            self.jsonfile = json.load(fp)
+
         with open(self.Eventlogfile,'r') as read_file:
             contents = read_file.read()
 
@@ -56,20 +59,16 @@ class Eventlog():
         for idx, string in  enumerate(TestDataInfo):
             TestDataInfo[idx] = string.decode("utf-8")
 
-        # with open(Eventlogfile,'r') as read_file:
-        #     contents = read_file.read()
 
-        # print(contents)
-
-        # existing_tci_arr = []
-        # for event in contents:
-        #     if event['event']['type'] == 'TestCaseInfoChange':
-        #         eventinfo = event['event']['event info']
-        #         existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
+        existing_tci_arr = []
+        for event in self.jsonfile:
+            if (event['event']['type'] == 'TestCaseInfoChange'):
+                eventinfo = event['event']['event info']
+                existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
                 
-        # for existing_tci in existing_tci_arr:
-        #     if(existing_tci == TestDataInfo):
-        #         return 0
+        for existing_tci in existing_tci_arr:
+            if(existing_tci == TestDataInfo).all():
+                return False
         
         project = TestDataInfo[0]
         subfolder = TestDataInfo[1]
@@ -91,7 +90,7 @@ class Eventlog():
 
         writeevent(self.Eventlogfile, event)
 
-        return 1
+        return True
 
 
     def RunningVIsChange(self,VIname,OnOff):
