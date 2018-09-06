@@ -1,112 +1,106 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
 import json
 import time
+import pathlib
 
-Eventlogfile = ""
+def writeevent(Eventlogfile, event):
+    with open(Eventlogfile, "r") as read_file:
+        try:
+            eventloglist = json.load(read_file)
+        except ValueError: #Empty file
+            eventloglist = []
+    with open(Eventlogfile, "w") as write_file:
+        eventloglist.append(event)
+        json.dump(eventloglist, write_file, indent=2) 
 
-def writeevent(event):
-    with open(Eventlogfile, "a") as write_file:
-        write_file.write(',\n')
-        json.dump(event, write_file)
+class Eventlog():
+    def __init__(self,Eventlogfile):
+        self.Eventlogfile = Eventlogfile
+        if isinstance(self.Eventlogfile,bytes): #The labview addin passes a bytes instead of string. 
+            self.Eventlogfile = self.Eventlogfile.decode("utf-8")
 
-def initialize():
-    global Eventlogfile
-    if isinstance(Eventlogfile,bytes): #The labview addin passes a bytes instead of string. 
-        Eventlogfile = Eventlogfile.decode("utf-8")
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "MonitorVIStarted"
+        } 
+        }
 
-    event = {
-    "dt": time.time(),
-    "event": {
-        "type" : "MonitorVIStarted"
-    } 
-    }
+        writeevent(self.Eventlogfile, event)
+            
+    def shutdown(self):
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "MonitorVIClosed"
+        } 
+        }
 
-    with open(Eventlogfile,'r') as read_file:
-        contents = read_file.read()
+        writeevent(self.Eventlogfile, event)
 
-    with open(Eventlogfile,'a') as write_file:
-        if(len(contents) > 0):
-            if(contents[-1] == ']'):
-                length = write_file.seek(0,2)
-                write_file.seek(length-2)
-                write_file.truncate()
-                write_file.write(',\n')
-        else:
-            write_file.write('[\n')
-        json.dump(event, write_file)
+    def TestCaseInfoChange(self, TestDataInfo):
+        for idx, string in  enumerate(TestDataInfo):
+            TestDataInfo[idx] = string.decode("utf-8")
 
+        with open(self.Eventlogfile,'r') as read_file:
+            self.jsonfile = json.load(read_file)
+        
+        existing_tci_arr = []
+        for event in self.jsonfile:
+            if (event['event']['type'] == 'TestCaseInfoChange'):
+                eventinfo = event['event']['event info']
+                existing_tci_arr.append([eventinfo['project'],eventinfo['subfolder'],eventinfo['filename'],eventinfo['measurementnumber']])
+                
+        for existing_tci in existing_tci_arr:
+            if(existing_tci == TestDataInfo).all():
+                return False #Existing test case info
+        
+        project = TestDataInfo[0]
+        subfolder = TestDataInfo[1]
+        filename = TestDataInfo[2]
+        measurementnumber = TestDataInfo[3]
 
-
-
-def shutdown():
-    event = {
-    "dt": time.time(),
-    "event": {
-        "type" : "MonitorVIClosed"
-    } 
-    }
-
-    writeevent(event)
-
-    with open(Eventlogfile,'a') as write_file:
-        write_file.write('\n]')
-
-
-def TestCaseInfoChange(TestDataInfo):
-    for idx, string in  enumerate(TestDataInfo):
-        TestDataInfo[idx] = string.decode("utf-8")
-    
-    project = TestDataInfo[0]
-    subfolder = TestDataInfo[1]
-    filename = TestDataInfo[2]
-    measurementnumber = TestDataInfo[3]
-
-    event = {
-    "dt": time.time(),
-    "event": {
-        "type" : "TestCaseInfoChange",
-        "event info": {
-            "project": project,
-            "subfolder": subfolder,
-            "filename": filename,
-            "measurementnumber": measurementnumber 
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "TestCaseInfoChange",
+            "event info": {
+                "project": project,
+                "subfolder": subfolder,
+                "filename": filename,
+                "measurementnumber": measurementnumber 
+                }
             }
         }
-    }
 
-    writeevent(event)
+        writeevent(self.Eventlogfile, event)
 
+        return True #was no existing test case info
 
-def RunningVIsChange(VIname,OnOff):
-    event = {
-    "dt": time.time(),
-    "event": {
-        "type" : "VIRunningChange",
-        "event info": {
-            "name" : VIname.decode("utf-8"),
-            "newstate" : OnOff
+    def RunningVIsChange(self,VIname,OnOff):
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "VIRunningChange",
+            "event info": {
+                "name" : VIname.decode("utf-8"),
+                "newstate" : OnOff
+                }
             }
         }
-    }
 
-    writeevent(event)
+        writeevent(self.Eventlogfile,event) 
 
-
-def SavingVIsChange(VIname,OnOff):
-    event = {
-    "dt": time.time(),
-    "event": {
-        "type" : "VISavingChange",
-        "event info": {
-            "name" : VIname.decode("utf-8"),
-            "newstate" : OnOff
+    def SavingVIsChange(self, VIname,OnOff):
+        event = {
+        "dt": time.time(),
+        "event": {
+            "type" : "VISavingChange",
+            "event info": {
+                "name" : VIname.decode("utf-8"),
+                "newstate" : OnOff
+                }
             }
         }
-    }
 
-    writeevent(event)
+        writeevent(self.Eventlogfile,event)
