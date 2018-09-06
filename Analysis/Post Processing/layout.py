@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Layout.ui'
+# Form implementation generated from reading ui file 'layout.ui'
 #
 # Created by: PyQt5 UI code generator 5.11.2
 #
@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(748, 495)
+        MainWindow.resize(770, 502)
         MainWindow.setStatusTip("")
         MainWindow.setAccessibleName("")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -41,7 +41,7 @@ class Ui_MainWindow(object):
         self.widget.setGeometry(QtCore.QRect(40, 40, 381, 241))
         self.widget.setObjectName("widget")
         self.selectChannel = QtWidgets.QListWidget(self.centralwidget)
-        self.selectChannel.setGeometry(QtCore.QRect(600, 320, 151, 51))
+        self.selectChannel.setGeometry(QtCore.QRect(600, 320, 151, 121))
         self.selectChannel.setProperty("isWrapping", False)
         self.selectChannel.setResizeMode(QtWidgets.QListView.Fixed)
         self.selectChannel.setViewMode(QtWidgets.QListView.ListMode)
@@ -56,7 +56,7 @@ class Ui_MainWindow(object):
         self.label_2.setGeometry(QtCore.QRect(460, 290, 91, 20))
         self.label_2.setObjectName("label_2")
         self.selectGroup = QtWidgets.QListWidget(self.centralwidget)
-        self.selectGroup.setGeometry(QtCore.QRect(450, 320, 141, 51))
+        self.selectGroup.setGeometry(QtCore.QRect(450, 320, 141, 121))
         self.selectGroup.setProperty("isWrapping", False)
         self.selectGroup.setResizeMode(QtWidgets.QListView.Fixed)
         self.selectGroup.setViewMode(QtWidgets.QListView.ListMode)
@@ -78,7 +78,7 @@ class Ui_MainWindow(object):
         self.label_5.setObjectName("label_5")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 748, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 770, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -104,14 +104,4 @@ class Ui_MainWindow(object):
         self.selectGroup.setSortingEnabled(False)
         self.label_4.setText(_translate("MainWindow", "Folder"))
         self.label_5.setText(_translate("MainWindow", "Filename"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
 

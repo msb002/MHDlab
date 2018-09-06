@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>748</width>
-    <height>495</height>
+    <width>770</width>
+    <height>502</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -120,7 +120,7 @@
       <x>600</x>
       <y>320</y>
       <width>151</width>
-      <height>51</height>
+      <height>121</height>
      </rect>
     </property>
     <property name="isWrapping" stdset="0">
@@ -183,7 +183,7 @@
       <x>450</x>
       <y>320</y>
       <width>141</width>
-      <height>51</height>
+      <height>121</height>
      </rect>
     </property>
     <property name="isWrapping" stdset="0">
@@ -266,7 +266,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>748</width>
+     <width>770</width>
      <height>26</height>
     </rect>
    </property>
