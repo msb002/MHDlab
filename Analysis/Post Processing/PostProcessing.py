@@ -20,7 +20,7 @@ import matplotlib as mpl
 import layout
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\bowenm\\Github\\MHDLab\\Python Analysis'
+PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
 if not PythonAnalysisPath in sys.path:
     sys.path.append(PythonAnalysisPath)
 
@@ -321,7 +321,7 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-#ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-04\\Sensors\\Log_Sensors_DAQ_0.tdms') #Windows
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-04\\Sensors\\Log_Sensors_DAQ_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 
