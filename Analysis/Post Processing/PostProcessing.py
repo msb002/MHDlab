@@ -20,7 +20,7 @@ import matplotlib as mpl
 import layout
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
+PythonAnalysisPath = 'C:\\Users\\bowenm\\Github\\MHDLab\\Python Analysis'
 if not PythonAnalysisPath in sys.path:
     sys.path.append(PythonAnalysisPath)
 
