@@ -19,24 +19,6 @@ class Eventlog():
         if isinstance(self.Eventlogfile,bytes): #The labview addin passes a bytes instead of string. 
             self.Eventlogfile = self.Eventlogfile.decode("utf-8")
 
-        event = {
-        "dt": time.time(),
-        "event": {
-            "type" : "MonitorVIStarted"
-        } 
-        }
-
-        writeevent(self.Eventlogfile, event)
-            
-    def shutdown(self):
-        event = {
-        "dt": time.time(),
-        "event": {
-            "type" : "MonitorVIClosed"
-        } 
-        }
-
-        writeevent(self.Eventlogfile, event)
 
     def TestCaseInfoChange(self, TestDataInfo):
         for idx, string in  enumerate(TestDataInfo):
