@@ -64,12 +64,19 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.origfilename = os.path.splitext(os.path.split(filepath)[1])[0]
 
             self.Logfiletdms = TF(filepath)
-            folder = os.path.split(filepath)
-            self.datefolder = os.path.split(folder[0])[0]
-            eventlogpath = os.path.join(self.datefolder,'Eventlog.json')
-            with open(eventlogpath) as fp:
-                self.jsonfile = json.load(fp)
-            
+            folder = os.path.split(filepath)[0]
+
+            #search upward in file directory for eventlog.json, then set that as the date folder
+            while(True):             
+                filelist = os.listdir(folder)
+                if 'Eventlog.json' in filelist:
+                    self.datefolder = folder
+                    eventlogpath = os.path.join(self.datefolder,'Eventlog.json')
+                    with open(eventlogpath) as fp:
+                        self.jsonfile = json.load(fp)
+                    break
+                folder = os.path.split(folder)[0]
+
             
             self.groups = self.Logfiletdms.groups()
             self.selectGroup.clear()
@@ -111,6 +118,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
         self.plotwidget.update_time(self.time1,self.time2)
+        self.cut_eventlog()
 
     def refresh(self):
         #full refresh of everything
@@ -152,10 +160,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(len(self.tci)>0):
             folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
             self.folderEdit.setText(folder)
-            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[-1]['measurementnumber']
+            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[-1]['measurementnumber'] + '_cut'
             self.filenameEdit.setText(filename)
-            self.filepath = os.path.join(self.datefolder, folder, filename)
-            self.filepath =   self.filepath + '.tdms'
+
 
 
     def gettestcaseinfo(self):
@@ -184,18 +191,20 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         idx1 = nearest_timeind(timedata,self.time1)
         idx2 = nearest_timeind(timedata,self.time2)
 
-        f, ext = os.path.splitext(self.filepath)
+        folder = self.folderEdit.text()
+        filename = self.filenameEdit.text()
 
-        newfile = f + '_cut.tdms' #TODO add original file name to cut file
+        self.filepath = os.path.join(self.datefolder, folder, filename)
+        self.filepath =   self.filepath + '.tdms'
 
-        direc = os.path.split(f)[0]
+        direc = os.path.split(self.filepath)[0]
         if not os.path.exists(direc):
             os.makedirs(direc)
 
         root_object = RootObject(properties={ #TODO root properties
         })
 
-        with TdmsWriter(newfile,mode='w') as tdms_writer:
+        with TdmsWriter(self.filepath,mode='w') as tdms_writer:
             for group in self.Logfiletdms.groups():
                 channels = self.Logfiletdms.group_channels(group)
                 for channel in channels:
@@ -330,7 +339,7 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-06\\Sensors_DAQ\\Log_Sensors_DAQ_1.tdms') #Windows
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-07\\Sensors\\Sensors_DAQ\\Log_Sensors_DAQ_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 
