@@ -16,6 +16,7 @@ import pytz
 import tzlocal
 import json
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 import layout
 
@@ -220,17 +221,26 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, parent = None, width =5, height = 4, dpi = 100):
-        self.fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
+
+        self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
+        
+        #self.axes = self.fig.add_subplot(111)
         
         self.compute_initial_figure()
-        
         FigureCanvas.__init__(self,self.fig)
+        self.cidpress = self.axes.figure.canvas.mpl_connect('button_press_event',self.onpress)
         self.setParent(parent)
 
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
 
         FigureCanvas.updateGeometry(self)
+
+    def onpress(self, event):
+        contains, attrd = self.timeline1.contains(event)
+        if not contains: return
+        print(self.timeline1.get_xdata()[0])
+        #print(event.xdata, event.ydata)
+
 
     def compute_initial_figure(self):
         self.dataline, = self.axes.plot([], [], 'r')
@@ -250,7 +260,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         if self.dataline in self.axes.lines:
             self.axes.lines.remove(self.dataline)
 
-        self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b')
+        self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
 
         self.zoom('all')
 
