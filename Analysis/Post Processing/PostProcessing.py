@@ -206,7 +206,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                         root_object,
                         channel_object])
 
-class MyMplCanvas(FigureCanvas):
+
+class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, parent = None, width =5, height = 4, dpi = 100):
         self.fig = mpl.figure.Figure(figsize = (width,height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
@@ -219,13 +220,6 @@ class MyMplCanvas(FigureCanvas):
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
 
         FigureCanvas.updateGeometry(self)
-
-    def compute_initial_figure(self):
-        pass
-
-class MyDynamicMplCanvas(MyMplCanvas):
-    def __init__(self,*args,**kwargs):
-        MyMplCanvas.__init__(self,*args,**kwargs)
 
     def compute_initial_figure(self):
         self.dataline, = self.axes.plot([], [], 'r')
