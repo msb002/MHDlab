@@ -46,6 +46,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
         self.endTimeInput.dateTimeChanged.connect(self.refresh_time)
         self.btn_refresh.clicked.connect(self.refresh)
+        self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
+        self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
+        self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
         self.btn_parse.clicked.connect(self.cut_tdms_file)
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
@@ -108,7 +111,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
         self.plotwidget.update_time(self.time1,self.time2)
-        self.cut_eventlog()
 
     def refresh(self):
         #full refresh of everything
@@ -241,13 +243,8 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b')
 
-        mintime = min(timearray)
-        maxtime = max(timearray)
-        padtime = (maxtime-mintime)/10
+        self.zoom('all')
 
-        self.axes.set_xlim(mintime - padtime,maxtime + padtime)
-        self.fig.autofmt_xdate()
-        self.axes.set_ylim(min(data),max(data))
         
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
@@ -277,8 +274,26 @@ class MyDynamicMplCanvas(FigureCanvas):
         for time in times:
             self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = 'red'))
         ##these vertical lines do not need to be in local time for some reason
-        
-        
+        self.draw()
+    
+    def zoom(self,option):
+        timearray = self.dataline.get_xdata()
+        ydata = self.dataline.get_ydata()
+        if(option == 'sel'):
+            self.axes.set_xlim(self.timeline1.get_xdata()[0],self.timeline2.get_xdata()[0])
+        if(option == 'all'):
+            mintime = min(timearray)
+            maxtime = max(timearray)
+            padtime = (maxtime-mintime)/10
+            self.axes.set_xlim(mintime - padtime,maxtime + padtime)
+        if(option == 'out'):
+            mintime = self.axes.get_xlim()[0]
+            maxtime = self.axes.get_xlim()[1]
+            padtime = (maxtime-mintime)/4
+            self.axes.set_xlim(mintime - padtime,maxtime + padtime)
+
+        self.fig.autofmt_xdate()
+        self.axes.set_ylim(min(ydata),max(ydata))
         self.draw()
 
 def np64_to_utc(np64_dt):
@@ -315,7 +330,7 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-#ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-04\\Sensors\\Log_Sensors_DAQ_0.tdms') #Windows
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-06\\Sensors_DAQ\\Log_Sensors_DAQ_1.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 
