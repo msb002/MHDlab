@@ -177,7 +177,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 testcaseinfo[time] = event['event']['event info']
                 times.append(time)
 
-        self.plotwidget.update_eventticks(times)
+        self.plotwidget.update_eventticks(testcaseinfo)
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
@@ -240,8 +240,7 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         FigureCanvas.updateGeometry(self)
 
-    def onpress(self, event):
-         
+    def onpress(self, event):        
         if(self.timeline1.contains(event)[0]):
             self.selectedline = self.timeline1
             x0 = self.selectedline.get_xdata()[0]
@@ -253,6 +252,17 @@ class MyDynamicMplCanvas(FigureCanvas):
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
+
+        for tick in self.eventticks:
+            if(tick.contains(event)[0]):
+                self.annot.set_text(tick.get_label())
+                self.annot.set_visible(True)
+                tick.set_color('g')       
+                break
+            else:
+                tick.set_color('r')
+            self.annot.set_visible(False)
+        self.annot.figure.canvas.draw()
         
     def onmotion(self,event):
         if self.press == None: return
@@ -287,6 +297,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.timeline1 = mpl.lines.Line2D([0],[0])
         self.timeline2 = mpl.lines.Line2D([0],[0])
         self.eventticks = [mpl.lines.Line2D([0],[0])]
+        self.annot = self.axes.text(0.5,0.5,'hello' ,visible = False, transform=self.axes.transAxes, backgroundcolor =  'w')
 
     def update_data(self,channel):
         timearray = channel.time_track(absolute_time = True)
@@ -301,7 +312,7 @@ class MyDynamicMplCanvas(FigureCanvas):
             self.axes.lines.remove(self.dataline)
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
-
+        
         self.zoom('all')
         
         self.axes.set_xlabel(x_label)
@@ -324,13 +335,17 @@ class MyDynamicMplCanvas(FigureCanvas):
         
         self.draw()
 
-    def update_eventticks(self,times):
+    def update_eventticks(self,tci):
         for line in self.eventticks:
             if line in self.axes.lines:
                 self.axes.lines.remove(line)
+                
+        self.eventticks = []
         
-        for time in times:
-            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = 'red'))
+        for time in tci:
+            tc = tci[time]
+            label = tc['project'] + '\\\n' + tc['subfolder'] + '\\\n' + tc['filename'] + '_' + tc['measurementnumber']
+            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = 'red',label = label,picker = 5))
         ##these vertical lines do not need to be in local time for some reason
         self.draw()
     
