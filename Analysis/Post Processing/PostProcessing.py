@@ -41,7 +41,7 @@ progversion = "0.1"
 
 class Ui_MainWindow(layout.Ui_MainWindow):
     def link_buttons(self):
-        self.plotwidget = MyDynamicMplCanvas(self.centralwidget, width = 5, height = 4, dpi = 100)
+        self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
         self.plotwidget.setObjectName("widget")
         self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
@@ -220,15 +220,20 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 
 class MyDynamicMplCanvas(FigureCanvas):
-    def __init__(self, parent = None, width =5, height = 4, dpi = 100):
+    def __init__(self, mainwindow, parent = None, width =5, height = 4, dpi = 100):
+        self.mainwindow = mainwindow
 
         self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
-        
-        #self.axes = self.fig.add_subplot(111)
-        
+
         self.compute_initial_figure()
         FigureCanvas.__init__(self,self.fig)
+        
         self.cidpress = self.axes.figure.canvas.mpl_connect('button_press_event',self.onpress)
+        self.cidmotion = self.axes.figure.canvas.mpl_connect('motion_notify_event',self.onmotion)
+        self.cidrelease = self.axes.figure.canvas.mpl_connect('button_release_event',self.onrelease)
+        self.press = None
+        self.selectedline = None
+
         self.setParent(parent)
 
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
@@ -236,10 +241,45 @@ class MyDynamicMplCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
     def onpress(self, event):
-        contains, attrd = self.timeline1.contains(event)
-        if not contains: return
-        print(self.timeline1.get_xdata()[0])
-        #print(event.xdata, event.ydata)
+         
+        if(self.timeline1.contains(event)[0]):
+            self.selectedline = self.timeline1
+            x0 = self.selectedline.get_xdata()[0]
+            press = mpl.dates.num2date(event.xdata)
+            self.press = x0, press
+
+        if(self.timeline2.contains(event)[0]):
+            self.selectedline = self.timeline2
+            x0 = self.selectedline.get_xdata()[0]
+            press = mpl.dates.num2date(event.xdata)
+            self.press = x0, press
+        
+    def onmotion(self,event):
+        if self.press == None: return
+        if self.selectedline == None: return
+        
+        x0, xpress = self.press
+        dx = mpl.dates.num2date(event.xdata) - xpress
+        newtime = x0 + dx
+        self.selectedline.set_xdata([newtime,newtime])
+        self.selectedline.figure.canvas.draw()
+
+    def onrelease(self,event):
+        if self.selectedline != None:
+            x0, xpress = self.press
+            dx = mpl.dates.num2date(event.xdata) - xpress
+            newtime = x0 + dx
+            startdatetime = QtCore.QDateTime()
+            startdatetime.setTime_t(newtime.timestamp())
+            if self.selectedline == self.timeline1:
+                self.mainwindow.startTimeInput.setDateTime(startdatetime)
+            elif self.selectedline == self.timeline2:
+                self.mainwindow.endTimeInput.setDateTime(startdatetime)
+            self.selectedline.figure.canvas.draw()
+            self.selectedline = None
+            
+        self.press = None 
+        
 
 
     def compute_initial_figure(self):
@@ -263,7 +303,6 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
 
         self.zoom('all')
-
         
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
