@@ -11,14 +11,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(767, 590)
+        MainWindow.resize(767, 563)
         MainWindow.setStatusTip("")
         MainWindow.setAccessibleName("")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.startTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.startTimeInput.setGeometry(QtCore.QRect(30, 350, 194, 22))
-        self.startTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.MinuteSection)
+        self.startTimeInput.setCurrentSection(QtWidgets.QDateTimeEdit.MonthSection)
         self.startTimeInput.setObjectName("startTimeInput")
         self.endTimeInput = QtWidgets.QDateTimeEdit(self.centralwidget)
         self.endTimeInput.setGeometry(QtCore.QRect(230, 350, 194, 22))
@@ -106,7 +106,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Post Processor"))
         self.startTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss AP"))
         self.endTimeInput.setDisplayFormat(_translate("MainWindow", "M/d/yyyy h:mm:ss"))
         self.btn_refresh.setText(_translate("MainWindow", "Refresh"))

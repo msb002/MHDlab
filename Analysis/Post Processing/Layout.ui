@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>767</width>
-    <height>590</height>
+    <height>563</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Post Processor</string>
   </property>
   <property name="statusTip">
    <string/>
@@ -30,7 +30,7 @@
      </rect>
     </property>
     <property name="currentSection">
-     <enum>QDateTimeEdit::MinuteSection</enum>
+     <enum>QDateTimeEdit::MonthSection</enum>
     </property>
     <property name="displayFormat">
      <string>M/d/yyyy h:mm:ss AP</string>
