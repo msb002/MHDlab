@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>767</width>
-    <height>563</height>
+    <width>775</width>
+    <height>565</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,9 +61,9 @@
    <widget class="QPushButton" name="btn_refresh">
     <property name="geometry">
      <rect>
-      <x>310</x>
+      <x>372</x>
       <y>310</y>
-      <width>93</width>
+      <width>81</width>
       <height>28</height>
      </rect>
     </property>
@@ -74,8 +74,8 @@
    <widget class="QPushButton" name="btn_parse">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>390</y>
+      <x>350</x>
+      <y>470</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -87,9 +87,9 @@
    <widget class="QPushButton" name="btn_open">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>390</y>
-      <width>93</width>
+      <x>10</x>
+      <y>310</y>
+      <width>91</width>
       <height>28</height>
      </rect>
     </property>
@@ -212,7 +212,7 @@
      <rect>
       <x>120</x>
       <y>460</y>
-      <width>301</width>
+      <width>211</width>
       <height>22</height>
      </rect>
     </property>
@@ -222,7 +222,7 @@
      <rect>
       <x>120</x>
       <y>490</y>
-      <width>301</width>
+      <width>211</width>
       <height>22</height>
      </rect>
     </property>
@@ -272,9 +272,9 @@
    <widget class="QPushButton" name="btn_zoomsel">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>110</x>
       <y>310</y>
-      <width>91</width>
+      <width>81</width>
       <height>28</height>
      </rect>
     </property>
@@ -285,7 +285,7 @@
    <widget class="QPushButton" name="btn_zoomout">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>200</x>
       <y>310</y>
       <width>81</width>
       <height>28</height>
@@ -298,9 +298,9 @@
    <widget class="QPushButton" name="btn_fitall">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>290</x>
       <y>310</y>
-      <width>81</width>
+      <width>71</width>
       <height>28</height>
      </rect>
     </property>
@@ -321,13 +321,169 @@
      <string>File information from event before 1st marker</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="t_mean">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Mean</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>StdDev</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="t_std">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="t_skew">
+    <property name="geometry">
+     <rect>
+      <x>220</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_9">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Skew</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Median</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="t_med">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Min</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="t_min">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="t_max">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>400</y>
+      <width>70</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_12">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>380</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Max</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>767</width>
+     <width>775</width>
      <height>26</height>
     </rect>
    </property>

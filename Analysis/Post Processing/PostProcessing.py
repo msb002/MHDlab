@@ -17,6 +17,7 @@ import tzlocal
 import json
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 
 import layout
 
@@ -44,8 +45,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
         self.plotwidget.setObjectName("widget")
-        self.startTimeInput.dateTimeChanged.connect(self.refresh_time)
-        self.endTimeInput.dateTimeChanged.connect(self.refresh_time)
+        self.startTimeInput.dateTimeChanged.connect(self.refresh)
+        self.endTimeInput.dateTimeChanged.connect(self.refresh)
         self.btn_refresh.clicked.connect(self.refresh)
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
@@ -53,6 +54,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_parse.clicked.connect(self.cut_tdms_file)
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
+
+        self.channel = None # replace in __init__
+        self.eventlog = None
 
     def open_tdmsfile(self, filepath= 0):
         if(filepath == 0):
@@ -108,6 +112,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         enddatetime = QtCore.QDateTime()
         enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
 
+        self.timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
+
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
 
@@ -119,20 +125,32 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
         self.plotwidget.update_time(self.time1,self.time2)
-        self.cut_eventlog()
+        
 
     def refresh(self):
         #full refresh of everything
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         selchannel = self.selectChannel.currentRow()
-        channel = channels[selchannel]
+        
 
-        self.plotwidget.update_data(channel)
+        if (self.channel == None) or (self.channel != channels[selchannel]):
+            self.channel = channels[selchannel]
+            self.plotwidget.update_data(self.channel)
         self.refresh_time()
         self.cut_eventlog()
+        self.update_stats(self.channel)
 
-
+    def update_stats(self,channel):
+        idx1 = nearest_timeind(self.timedata,self.time1)
+        idx2 = nearest_timeind(self.timedata,self.time2)
+        if len(channel.data[idx1:idx2]) > 0:
+            self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
+            self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
+            self.t_skew.setText('{0:.3f}'.format(stats.skew(channel.data[idx1:idx2])))
+            self.t_std.setText('{0:.3f}'.format(np.std(channel.data[idx1:idx2])))
+            self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
+            self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
 
     def cut_eventlog(self):
         #create array of events within the time window
@@ -142,7 +160,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             time = time.replace(tzinfo=pytz.utc)
             if((time>self.time1) and (time<self.time2)):
                 self.eventlog_cut.append(event)
-        self.display_eventlog()
+        if self.eventlog_cut != self.eventlog:
+            self.eventlog = self.eventlog_cut
+            self.display_eventlog()
 
     def display_eventlog(self):
         #refresh the cut eventlog in the text display
@@ -285,6 +305,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
+            self.mainwindow.refresh()
             self.selectedline.figure.canvas.draw()
             self.selectedline = None
             
