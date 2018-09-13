@@ -278,3 +278,18 @@ def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None)
     fit = np.exp(fit)
     
     return fit, gatedelays_fit, fitcoef
+
+
+
+
+
+    #TRPL lifetime pseudo code
+    # inputs: SPE TRPL sequence, powermeter tdms file, SPE file of camera 2 sequence (laser timing)
+    # parse SPE file to obtain spectra dataframe
+    # plot the time decay along with the power meter and laser timing to make sure that there is steady state
+    # Use time sequence to parse the power meter file
+    # normalize the dataframe to power
+    # plot the normalized decay
+    # make this a modular funciton so that the code can be used to parse series of test cases
+    
+   
