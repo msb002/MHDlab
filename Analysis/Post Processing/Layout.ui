@@ -74,8 +74,8 @@
    <widget class="QPushButton" name="btn_parse">
     <property name="geometry">
      <rect>
-      <x>332</x>
-      <y>450</y>
+      <x>330</x>
+      <y>420</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -311,8 +311,8 @@
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>430</y>
+      <x>30</x>
+      <y>420</y>
       <width>291</width>
       <height>20</height>
      </rect>
@@ -480,14 +480,27 @@
    <widget class="QPushButton" name="btn_parse_ext">
     <property name="geometry">
      <rect>
-      <x>332</x>
-      <y>480</y>
+      <x>330</x>
+      <y>450</y>
       <width>111</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
      <string>Parse other file</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_parse_tci">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>480</y>
+      <width>111</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Parse TCI</string>
     </property>
    </widget>
   </widget>
