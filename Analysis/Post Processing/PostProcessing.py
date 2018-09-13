@@ -41,7 +41,9 @@ progversion = "0.1"
 
 
 class Ui_MainWindow(layout.Ui_MainWindow):
+    #The main window inherits from the MainWindow class within layout.py
     def link_buttons(self):
+        #functions are tied to the widgets
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
         self.plotwidget.setObjectName("widget")
@@ -62,14 +64,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def open_tdmsfile(self, filepath= 0):
         if(filepath == 0):
-            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data\\2018-08-22\\Sensors')
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
             filepath = paths[0]
         if(filepath == ''):
             pass
         else:
             
             self.origfilename = os.path.splitext(os.path.split(filepath)[1])[0]
-
             self.Logfiletdms = TF(filepath)
             folder = os.path.split(filepath)[0]
 
@@ -84,16 +85,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                     break
                 folder = os.path.split(folder)[0]
 
-            
+            #pull out groups and populate the group display
             self.groups = self.Logfiletdms.groups()
             self.selectGroup.clear()
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
 
             self.update_channel_display()
-
-            
-             
             self.plotwidget.update_eventticks()
             self.refresh()      
 
@@ -150,6 +148,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget.draw()
 
     def update_stats(self,channel):
+        #update the statistics calculations and display
         idx1 = nearest_timeind(self.timedata,self.time1)
         idx2 = nearest_timeind(self.timedata,self.time2)
         if len(channel.data[idx1:idx2]) > 0:
@@ -173,7 +172,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.display_eventlog()
 
     def display_eventlog(self):
-        #refresh the cut eventlog in the text display
+        #refresh the cut eventlog in the text display and update the folder and filename inputs
         string = ''
 
         for event in self.eventlog_cut:
@@ -202,9 +201,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 time = time.replace(tzinfo=pytz.utc)
                 testcaseinfo[time] = event['event']['event info']
                 times.append(time)
-
-        
-
+        #pull only those events before time1 (?)        
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
             if(time<self.time1): 
@@ -253,25 +250,23 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, mainwindow, parent = None, width =5, height = 4, dpi = 100):
-        self.mainwindow = mainwindow
+        self.mainwindow = mainwindow #reference of main window so that those class funcitons can be called
 
+        #setup the figure
         self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
-
         self.compute_initial_figure()
         FigureCanvas.__init__(self,self.fig)
-        
+        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        self.setParent(parent)
+
+        #setup to detect mouse events
         self.cidpress = self.axes.figure.canvas.mpl_connect('button_press_event',self.onpress)
         self.cidmotion = self.axes.figure.canvas.mpl_connect('motion_notify_event',self.onmotion)
         self.cidrelease = self.axes.figure.canvas.mpl_connect('button_release_event',self.onrelease)
         self.press = None
         self.selectedline = None
         self.lastselectedline = None
-
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
-
-        FigureCanvas.updateGeometry(self)
 
     def compute_initial_figure(self):
         self.dataline, = self.axes.plot([], [], 'r')
@@ -340,15 +335,19 @@ class MyDynamicMplCanvas(FigureCanvas):
     def onmotion(self,event):
         if self.press == None: return
         if self.selectedline == None: return
-        
+
+        #calculate new position of the vertical line and draw it. 
         x0, xpress = self.press
         dx = mpl.dates.num2date(event.xdata) - xpress
         newtime = x0 + dx
         self.selectedline.set_xdata([newtime,newtime])
         self.selectedline.figure.canvas.draw()
 
+
     def onrelease(self,event):
         if self.selectedline != None:
+            #if letting go of a line, update the relevant time display.
+
             x0, xpress = self.press
             dx = mpl.dates.num2date(event.xdata) - xpress
             newtime = x0 + dx
@@ -368,32 +367,30 @@ class MyDynamicMplCanvas(FigureCanvas):
 
 
     def update_data(self,channel):
+        #updates the figure with a new channel. 
+
         timearray = channel.time_track(absolute_time = True)
         timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
-        
         data = channel.data
-
-        x_label  = 'Time'
-        y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
 
         if self.dataline in self.axes.lines:
             self.axes.lines.remove(self.dataline)
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
         
-        self.zoom('all')
-        
+        x_label  = 'Time'
+        y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
-        self.fig.tight_layout()
 
+        self.zoom('all')
+        self.fig.tight_layout()
         self.draw()
 
 
 
     def update_eventticks(self):
-
-
+        #removes and replaces the event tick markers.
         for line in self.eventticks:
             if line in self.axes.lines:
                 self.axes.lines.remove(line)
@@ -423,16 +420,20 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.draw()
     
     def zoom(self,option):
+        #change the x window size, depending on the option
         timearray = self.dataline.get_xdata()
         ydata = self.dataline.get_ydata()
         if(option == 'sel'):
+            #vertical line selection
             self.axes.set_xlim(self.timeline1.get_xdata()[0],self.timeline2.get_xdata()[0])
         if(option == 'all'):
+            #whole window
             mintime = min(timearray)
             maxtime = max(timearray)
             padtime = (maxtime-mintime)/10
             self.axes.set_xlim(mintime - padtime,maxtime + padtime)
         if(option == 'out'):
+            #25 percent out
             mintime = self.axes.get_xlim()[0]
             maxtime = self.axes.get_xlim()[1]
             padtime = (maxtime-mintime)/4
@@ -442,6 +443,8 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.axes.set_ylim(min(ydata),max(ydata))
         self.draw()
 
+
+#time conversion.
 def np64_to_utc(np64_dt):
     utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt)).replace(tzinfo=pytz.utc)
     return utc_dt
@@ -461,15 +464,10 @@ def nearest_timeind(timearray, pivot):
     seconds = np.array(list(map(lambda x: x.total_seconds(),diffs)))
     return seconds.argmin()
 
-def combine_channels(Fileinfo,group,channel):
-    combined = np.empty(0)
-    for TDMSfile in Fileinfo['TDMSfile']:
-        data = TDMSfile.channel_data(group,channel)
-        combined = np.append(combined,data)
-    return combined
-
 def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
+    #cut up a tdms file based on two input times, a tdms file, and a output filepath
 
+    #make directory if doesn't exist
     direc = os.path.split(fileoutpath)[0]
     if not os.path.exists(direc):
         os.makedirs(direc)
@@ -478,42 +476,43 @@ def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
     })
 
     timearray = None
-    delete = False
+    delete = False #delete dummy file if time1 and time2 were not in the waveform of the first channel
     with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
         for group in tdmsfile.groups():
             channels = tdmsfile.group_channels(group)
             for channel in channels:
 
+                #only update if the time array doesn't change, don't think that this is actually saving time
                 if (timearray != channel.time_track(absolute_time = True)).all():
                     timearray = channel.time_track(absolute_time = True)
                     timedata = list(map(lambda x: np64_to_utc(x),timearray))
-
+                #flip if the times are backwards
                 if(time2 > time1):
                     idx1 = nearest_timeind(timedata,time1)
                     idx2 = nearest_timeind(timedata,time2)
                 else:
                     idx2 = nearest_timeind(timedata,time1)
                     idx1 = nearest_timeind(timedata,time2)
-
-                if(idx1 == idx2): #times are not within file
+                #if not in the file then exit the for loop
+                if(idx1 == idx2): 
                     print('times not in file ' + tdmsfile.object().properties['name'])
                     delete = True
                     break
 
+                #write porperties to the channels
                 props = channel.properties
                 start= props['wf_start_time']
                 offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
                 props['wf_start_time'] = start + offset
 
+                #write the channel segment to the file
                 channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
                 tdms_writer.write_segment([
                     root_object,
                     channel_object])
 
     if delete:
-        os.remove(fileoutpath)
-
-
+        os.remove(fileoutpath) # delete file if for loop was exited
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -523,9 +522,9 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-12\\Sensors\\Sensors_DAQ\\Log_Sensors_DAQ_0.tdms') #Windows
+#ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-12\\Sensors\\Sensors_DAQ\\Log_Sensors_DAQ_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
-ui.refresh()
+#ui.refresh()
 
 sys.exit(app.exec_())
