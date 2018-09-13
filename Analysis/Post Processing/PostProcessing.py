@@ -88,7 +88,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
 
-            self.update_channel_display() 
+            self.update_channel_display()
+
+            
+             
             self.plotwidget.update_eventticks()
             self.refresh()      
 
@@ -102,12 +105,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.selectChannel.clear()
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
-        channel = channels[0]
-        self.update_time_displays(channel)
 
-    def update_time_displays(self,channel):
-        #updates the time inputs to max and min of channel
-        self.timearray = channel.time_track(absolute_time = True)
+        #update_time_displays : updates the time inputs to max and min of channel
+        self.timearray = channels[0].time_track(absolute_time = True)
         self.timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
 
         startdatetime = QtCore.QDateTime()
@@ -117,6 +117,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
+
         
     def refresh(self):
         #full refresh of everything
@@ -281,31 +282,29 @@ class MyDynamicMplCanvas(FigureCanvas):
         
         clickedonartist = False # not sure how to check that 'only the canvas without ticks' was clicked on (i.e. wihtout ticks)
 
-        if(self.timeline1.contains(event)[0]):
-            self.timeline1.set_color('g')
-            self.timeline2.set_color('gray')
-            self.selectedline = self.timeline1
-            self.lastselectedline =  self.timeline1
-            x0 = self.selectedline.get_xdata()[0]
-            press = mpl.dates.num2date(event.xdata)
-            self.press = x0, press
-            clickedonartist = True
+        if(self.timeline1.contains(event)[0] or self.timeline2.contains(event)[0]):
+            #clicked on a line
 
-
-        if(self.timeline2.contains(event)[0]):
             self.timeline1.set_color('gray')
-            self.timeline2.set_color('g')
-            self.selectedline = self.timeline2
-            self.lastselectedline =  self.timeline2
+            self.timeline2.set_color('gray')
+            if(self.timeline1.contains(event)[0]):
+                self.selectedline = self.timeline1
+                self.lastselectedline =  self.timeline1
+
+            if(self.timeline2.contains(event)[0]):
+                self.selectedline = self.timeline2
+                self.lastselectedline =  self.timeline2
+
+            self.selectedline.set_color('g')
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
             clickedonartist = True
-
         
         self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
+                #clicked on an event tick
                 
                 self.annot.set_text(tick.get_label())
                 self.annot.set_visible(True)
@@ -325,12 +324,15 @@ class MyDynamicMplCanvas(FigureCanvas):
 
 
         if clickedonartist == False: 
+            # didn't click on anything 
+
             self.annot.set_visible(False)
             self.update_eventticks()
             self.lastselectedline =  None
             self.timeline1.set_color('gray')
             self.timeline2.set_color('gray')
-        self.annot.figure.canvas.draw()
+
+        self.draw()
         
     def onmotion(self,event):
         if self.press == None: return
