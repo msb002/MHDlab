@@ -51,7 +51,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
-        self.btn_parse.clicked.connect(self.cut_tdms_file)
+        self.btn_parse.clicked.connect(self.parse_tdms_file)
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
 
@@ -210,42 +210,14 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return testcaseinfoarray
 
-    def cut_tdms_file(self):
-
-        timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
-
-        if(self.time2 > self.time1):
-            idx1 = nearest_timeind(timedata,self.time1)
-            idx2 = nearest_timeind(timedata,self.time2)
-        else:
-            idx2 = nearest_timeind(timedata,self.time1)
-            idx1 = nearest_timeind(timedata,self.time2)
-
+    def parse_tdms_file(self):
         folder = self.folderEdit.text()
         filename = self.filenameEdit.text()
 
         self.filepath = os.path.join(self.datefolder, folder, filename)
         self.filepath =   self.filepath + '.tdms'
+        cut_tdms_file(self.time1,self.time2,self.filepath,self.Logfiletdms)
 
-        direc = os.path.split(self.filepath)[0]
-        if not os.path.exists(direc):
-            os.makedirs(direc)
-
-        root_object = RootObject(properties={ #TODO root properties
-        })
-
-        with TdmsWriter(self.filepath,mode='w') as tdms_writer:
-            for group in self.Logfiletdms.groups():
-                channels = self.Logfiletdms.group_channels(group)
-                for channel in channels:
-                    props = channel.properties
-                    start= props['wf_start_time']
-                    offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
-                    props['wf_start_time'] = start + offset
-                    channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
-                    tdms_writer.write_segment([
-                        root_object,
-                        channel_object])
 
 
 class MyDynamicMplCanvas(FigureCanvas):
@@ -465,6 +437,48 @@ def combine_channels(Fileinfo,group,channel):
         combined = np.append(combined,data)
     return combined
 
+def cut_tdms_file(time1, time2, fileoutpath, tdmsfile = None ):
+
+    if tdmsfile == None:
+        paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
+        tdmsfile = TF(paths[0])
+
+    #timearray = channels[0].time_track(absolute_time = True)
+    #timedata = list(map(lambda x: np64_to_utc(x),timearray))
+
+
+    direc = os.path.split(fileoutpath)[0]
+    if not os.path.exists(direc):
+        os.makedirs(direc)
+
+    root_object = RootObject(properties={ #TODO root properties
+    })
+
+    with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
+        for group in tdmsfile.groups():
+            channels = tdmsfile.group_channels(group)
+            for channel in channels:
+
+
+                timearray = channel.time_track(absolute_time = True)
+                timedata = list(map(lambda x: np64_to_utc(x),timearray))
+
+                if(time2 > time1):
+                    idx1 = nearest_timeind(timedata,time1)
+                    idx2 = nearest_timeind(timedata,time2)
+                else:
+                    idx2 = nearest_timeind(timedata,time1)
+                    idx1 = nearest_timeind(timedata,time2)
+
+                props = channel.properties
+                start= props['wf_start_time']
+                offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
+                props['wf_start_time'] = start + offset
+
+                channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
+                tdms_writer.write_segment([
+                    root_object,
+                    channel_object])
 
 
 
