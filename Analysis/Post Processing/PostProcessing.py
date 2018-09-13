@@ -465,9 +465,7 @@ def nearest_timeind(timearray, pivot):
     return seconds.argmin()
 
 def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
-    #cut up a tdms file based on two input times, a tdms file, and a output filepath
 
-    #make directory if doesn't exist
     direc = os.path.split(fileoutpath)[0]
     if not os.path.exists(direc):
         os.makedirs(direc)
@@ -476,43 +474,40 @@ def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
     })
 
     timearray = None
-    delete = False #delete dummy file if time1 and time2 were not in the waveform of the first channel
+    delete = False
     with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
         for group in tdmsfile.groups():
             channels = tdmsfile.group_channels(group)
             for channel in channels:
 
-                #only update if the time array doesn't change, don't think that this is actually saving time
                 if (timearray != channel.time_track(absolute_time = True)).all():
                     timearray = channel.time_track(absolute_time = True)
                     timedata = list(map(lambda x: np64_to_utc(x),timearray))
-                #flip if the times are backwards
+
                 if(time2 > time1):
                     idx1 = nearest_timeind(timedata,time1)
                     idx2 = nearest_timeind(timedata,time2)
                 else:
                     idx2 = nearest_timeind(timedata,time1)
                     idx1 = nearest_timeind(timedata,time2)
-                #if not in the file then exit the for loop
-                if(idx1 == idx2): 
+
+                if(idx1 == idx2): #times are not within file
                     print('times not in file ' + tdmsfile.object().properties['name'])
                     delete = True
                     break
 
-                #write porperties to the channels
                 props = channel.properties
                 start= props['wf_start_time']
                 offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
                 props['wf_start_time'] = start + offset
 
-                #write the channel segment to the file
                 channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
                 tdms_writer.write_segment([
                     root_object,
                     channel_object])
 
     if delete:
-        os.remove(fileoutpath) # delete file if for loop was exited
+        os.remove(fileoutpath)
 
 app = QtWidgets.QApplication(sys.argv)
 
