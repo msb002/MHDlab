@@ -140,7 +140,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
-        self.plotwidget.update_time(self.time1,self.time2)
+        
+        self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
+        self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
+        
+        self.plotwidget.draw()
 
     def update_stats(self,channel):
         idx1 = nearest_timeind(self.timedata,self.time1)
@@ -208,8 +212,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def cut_tdms_file(self):
 
         timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
-        idx1 = nearest_timeind(timedata,self.time1)
-        idx2 = nearest_timeind(timedata,self.time2)
+
+        if(self.time2 > self.time1):
+            idx1 = nearest_timeind(timedata,self.time1)
+            idx2 = nearest_timeind(timedata,self.time2)
+        else:
+            idx2 = nearest_timeind(timedata,self.time1)
+            idx1 = nearest_timeind(timedata,self.time2)
 
         folder = self.folderEdit.text()
         filename = self.filenameEdit.text()
@@ -260,24 +269,40 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         FigureCanvas.updateGeometry(self)
 
+    def compute_initial_figure(self):
+        self.dataline, = self.axes.plot([], [], 'r')
+        self.timeline1 = self.axes.axvline(0, linestyle = '--', color = 'gray')
+        self.timeline2 = self.axes.axvline(0, linestyle = '--', color = 'gray')
+        self.eventticks = [mpl.lines.Line2D([0],[0])]
+        bbox_props = dict(boxstyle="square", fc="white", ec="black", lw=2)
+        self.annot = self.axes.text(0.25,0.25,'hello' ,visible = False, transform=self.axes.transAxes, backgroundcolor =  'w', bbox = bbox_props)
+
     def onpress(self, event):
         
+        clickedonartist = False # not sure how to check that 'only the canvas without ticks' was clicked on (i.e. wihtout ticks)
 
         if(self.timeline1.contains(event)[0]):
+            self.timeline1.set_color('g')
+            self.timeline2.set_color('gray')
             self.selectedline = self.timeline1
-            self.lastselectedline = self.timeline1
+            self.lastselectedline =  self.timeline1
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
+            clickedonartist = True
+
 
         if(self.timeline2.contains(event)[0]):
+            self.timeline1.set_color('gray')
+            self.timeline2.set_color('g')
             self.selectedline = self.timeline2
-            self.lastselectedline = self.timeline2
+            self.lastselectedline =  self.timeline2
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
+            clickedonartist = True
 
-        clickedontick = False
+        
         self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
@@ -285,20 +310,26 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.annot.set_text(tick.get_label())
                 self.annot.set_visible(True)
                 tick.set_color('g')
-                clickedontick = True
+                clickedonartist = True
 
                 if (event.dblclick == True) and (self.lastselectedline != None):
+                    self.annot.set_visible(False)
                     time = tick.get_xdata()
-                    self.lastselectedline.set_xdata(time)
-                    startdatetime = QtCore.QDateTime()
-                    startdatetime.setTime_t(datetime_to_unix(time[0]))
-                    self.mainwindow.startTimeInput.setDateTime(startdatetime)
-                    self.lastselectedline.figure.canvas.draw()
-                    
+                    datetime = QtCore.QDateTime()
+                    datetime.setTime_t(datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
-        if clickedontick == False:
+                    if(self.lastselectedline == self.timeline1):
+                        self.mainwindow.startTimeInput.setDateTime(datetime)
+                    elif(self.lastselectedline == self.timeline2):
+                        self.mainwindow.endTimeInput.setDateTime(datetime)
+
+
+        if clickedonartist == False: 
             self.annot.set_visible(False)
             self.update_eventticks()
+            self.lastselectedline =  None
+            self.timeline1.set_color('gray')
+            self.timeline2.set_color('gray')
         self.annot.figure.canvas.draw()
         
     def onmotion(self,event):
@@ -330,12 +361,6 @@ class MyDynamicMplCanvas(FigureCanvas):
         
 
 
-    def compute_initial_figure(self):
-        self.dataline, = self.axes.plot([], [], 'r')
-        self.timeline1 = mpl.lines.Line2D([0],[0])
-        self.timeline2 = mpl.lines.Line2D([0],[0])
-        self.eventticks = [mpl.lines.Line2D([0],[0])]
-        self.annot = self.axes.text(0.5,0.5,'hello' ,visible = False, transform=self.axes.transAxes, backgroundcolor =  'w')
 
     def update_data(self,channel):
         timearray = channel.time_track(absolute_time = True)
@@ -359,19 +384,7 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         self.draw()
 
-    def update_time(self,time1,time2):
-        
-        if self.timeline1 in self.axes.lines:
-            self.axes.lines.remove(self.timeline1)
-        
-        if self.timeline2 in self.axes.lines:
-            self.axes.lines.remove(self.timeline2)
-        
-        ##these vertical lines do not need to be in local time for some reason
-        self.timeline1 = self.axes.axvline(time1, linestyle = '--', color = 'gray')  
-        self.timeline2 = self.axes.axvline(time2, linestyle = '--',  color = 'gray') 
-        
-        self.draw()
+
 
     def update_eventticks(self):
 
@@ -400,7 +413,7 @@ class MyDynamicMplCanvas(FigureCanvas):
             except:
                 color = 'black'
             
-            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,label = label,picker = 5))
+            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,label = label,picker = 5, linewidth = 5))
             ##these vertical lines do not need to be in local time for some reason
         self.draw()
     
