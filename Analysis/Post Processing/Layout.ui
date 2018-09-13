@@ -74,14 +74,14 @@
    <widget class="QPushButton" name="btn_parse">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>470</y>
-      <width>93</width>
+      <x>332</x>
+      <y>450</y>
+      <width>111</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
-     <string>Parse</string>
+     <string>Parse internal file</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btn_open">
@@ -210,8 +210,8 @@
    <widget class="QLineEdit" name="folderEdit">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>460</y>
+      <x>100</x>
+      <y>450</y>
       <width>211</width>
       <height>22</height>
      </rect>
@@ -220,8 +220,8 @@
    <widget class="QLineEdit" name="filenameEdit">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>490</y>
+      <x>100</x>
+      <y>480</y>
       <width>211</width>
       <height>22</height>
      </rect>
@@ -231,7 +231,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>460</y>
+      <y>450</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -244,7 +244,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>490</y>
+      <y>480</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -475,6 +475,19 @@
     </property>
     <property name="text">
      <string>Max</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_parse_ext">
+    <property name="geometry">
+     <rect>
+      <x>332</x>
+      <y>480</y>
+      <width>111</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Parse other file</string>
     </property>
    </widget>
   </widget>

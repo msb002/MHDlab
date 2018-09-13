@@ -51,7 +51,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
-        self.btn_parse.clicked.connect(self.parse_tdms_file)
+        self.btn_parse.clicked.connect(lambda : self.parse_tdms_file(internalfile = True))
+        self.btn_parse_ext.clicked.connect(lambda : self.parse_tdms_file(internalfile = False))
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
 
@@ -210,13 +211,22 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return testcaseinfoarray
 
-    def parse_tdms_file(self):
+    def parse_tdms_file(self, internalfile):
         folder = self.folderEdit.text()
         filename = self.filenameEdit.text()
 
-        self.filepath = os.path.join(self.datefolder, folder, filename)
-        self.filepath =   self.filepath + '.tdms'
-        cut_tdms_file(self.time1,self.time2,self.filepath,self.Logfiletdms)
+        if(internalfile):
+            filepath = os.path.join(self.datefolder, folder, filename)
+            filepath =   filepath + '.tdms'
+            cut_tdms_file(self.time1,self.time2,filepath,self.Logfiletdms)
+        else:
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
+            filepathext = paths[0]
+            tdmsfile = TF(filepathext)
+            origfilename = os.path.splitext(os.path.split(filepathext)[1])[0]
+            filepath = os.path.join(self.datefolder, folder, origfilename)
+            filepath =   filepath + '.tdms'
+            cut_tdms_file(self.time1,self.time2,filepath,tdmsfile)
 
 
 
@@ -437,15 +447,7 @@ def combine_channels(Fileinfo,group,channel):
         combined = np.append(combined,data)
     return combined
 
-def cut_tdms_file(time1, time2, fileoutpath, tdmsfile = None ):
-
-    if tdmsfile == None:
-        paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
-        tdmsfile = TF(paths[0])
-
-    #timearray = channels[0].time_track(absolute_time = True)
-    #timedata = list(map(lambda x: np64_to_utc(x),timearray))
-
+def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
 
     direc = os.path.split(fileoutpath)[0]
     if not os.path.exists(direc):
@@ -470,6 +472,11 @@ def cut_tdms_file(time1, time2, fileoutpath, tdmsfile = None ):
                     idx2 = nearest_timeind(timedata,time1)
                     idx1 = nearest_timeind(timedata,time2)
 
+                if(idx1 == idx2): #times are not within file
+                    print('times not in file ')
+                    print(tdmsfile)
+                    break
+
                 props = channel.properties
                 start= props['wf_start_time']
                 offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
@@ -490,7 +497,7 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-07\\Sensors\\Sensors_DAQ\\Log_Sensors_DAQ_0.tdms') #Windows
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-12\\Sensors\\Sensors_DAQ\\Log_Sensors_DAQ_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 ui.refresh()
