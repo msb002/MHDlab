@@ -89,6 +89,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.selectGroup.setCurrentRow(0)
 
             self.update_channel_display() 
+            self.plotwidget.update_eventticks()
             self.refresh()      
 
     def update_channel_display(self):
@@ -107,15 +108,30 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def update_time_displays(self,channel):
         #updates the time inputs to max and min of channel
         self.timearray = channel.time_track(absolute_time = True)
+        self.timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
+
         startdatetime = QtCore.QDateTime()
         startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
         enddatetime = QtCore.QDateTime()
         enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
 
-        self.timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
-
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
+        
+    def refresh(self):
+        #full refresh of everything
+        selgroup = self.selectGroup.currentRow()
+        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+        selchannel = self.selectChannel.currentRow()
+
+        if (self.channel == None) or (self.channel != channels[selchannel]):
+            self.channel = channels[selchannel]
+            self.plotwidget.update_data(self.channel)
+        
+        self.refresh_time()
+        self.cut_eventlog()
+        self.update_stats(self.channel)
+        
 
     def refresh_time(self):
         #pull the time from the inputs and update the gray lines on the display and cut event log
@@ -125,21 +141,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
         self.plotwidget.update_time(self.time1,self.time2)
-        
-
-    def refresh(self):
-        #full refresh of everything
-        selgroup = self.selectGroup.currentRow()
-        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-        selchannel = self.selectChannel.currentRow()
-        
-
-        if (self.channel == None) or (self.channel != channels[selchannel]):
-            self.channel = channels[selchannel]
-            self.plotwidget.update_data(self.channel)
-        self.refresh_time()
-        self.cut_eventlog()
-        self.update_stats(self.channel)
 
     def update_stats(self,channel):
         idx1 = nearest_timeind(self.timedata,self.time1)
@@ -184,8 +185,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[-1]['measurementnumber'] + '_cut'
             self.filenameEdit.setText(filename)
 
-
-
     def gettestcaseinfo(self):
         #pull the testcase info from the json file
         testcaseinfo = {}
@@ -197,7 +196,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 testcaseinfo[time] = event['event']['event info']
                 times.append(time)
 
-        self.plotwidget.update_eventticks(testcaseinfo)
+        
 
         testcaseinfoarray = []
         for time, tci in testcaseinfo.items():
@@ -253,6 +252,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.cidrelease = self.axes.figure.canvas.mpl_connect('button_release_event',self.onrelease)
         self.press = None
         self.selectedline = None
+        self.lastselectedline = None
 
         self.setParent(parent)
 
@@ -260,28 +260,45 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         FigureCanvas.updateGeometry(self)
 
-    def onpress(self, event):        
+    def onpress(self, event):
+        
+
         if(self.timeline1.contains(event)[0]):
             self.selectedline = self.timeline1
+            self.lastselectedline = self.timeline1
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
 
         if(self.timeline2.contains(event)[0]):
             self.selectedline = self.timeline2
+            self.lastselectedline = self.timeline2
             x0 = self.selectedline.get_xdata()[0]
             press = mpl.dates.num2date(event.xdata)
             self.press = x0, press
 
+        clickedontick = False
+        self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
+                
                 self.annot.set_text(tick.get_label())
                 self.annot.set_visible(True)
-                tick.set_color('g')       
-                break
-            else:
-                tick.set_color('r')
+                tick.set_color('g')
+                clickedontick = True
+
+                if (event.dblclick == True) and (self.lastselectedline != None):
+                    time = tick.get_xdata()
+                    self.lastselectedline.set_xdata(time)
+                    startdatetime = QtCore.QDateTime()
+                    startdatetime.setTime_t(datetime_to_unix(time[0]))
+                    self.mainwindow.startTimeInput.setDateTime(startdatetime)
+                    self.lastselectedline.figure.canvas.draw()
+                    
+
+        if clickedontick == False:
             self.annot.set_visible(False)
+            self.update_eventticks()
         self.annot.figure.canvas.draw()
         
     def onmotion(self,event):
@@ -356,18 +373,35 @@ class MyDynamicMplCanvas(FigureCanvas):
         
         self.draw()
 
-    def update_eventticks(self,tci):
+    def update_eventticks(self):
+
+
         for line in self.eventticks:
             if line in self.axes.lines:
                 self.axes.lines.remove(line)
                 
         self.eventticks = []
-        
-        for time in tci:
-            tc = tci[time]
-            label = tc['project'] + '\\\n' + tc['subfolder'] + '\\\n' + tc['filename'] + '_' + tc['measurementnumber']
-            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = 'red',label = label,picker = 5))
-        ##these vertical lines do not need to be in local time for some reason
+        for event in self.mainwindow.jsonfile:
+            time = datetime.datetime.utcfromtimestamp(event['dt'])
+            time = time.replace(tzinfo=pytz.utc)
+            label = event['event']['type'] + '\n'
+            eventinfo = event['event']['event info']
+            for key in eventinfo:
+                #label = tc['project'] + '\\\n' + tc['subfolder'] + '\\\n' + tc['filename'] + '_' + tc['measurementnumber']
+                label = label + key + ': ' +  str(eventinfo[key]) + '\n'
+
+            colordict = {
+                'VIRunningChange': 'orange',
+                'TestCaseInfoChange': 'r'
+            }
+
+            try:
+                color = colordict[event['event']['type']]
+            except:
+                color = 'black'
+            
+            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,label = label,picker = 5))
+            ##these vertical lines do not need to be in local time for some reason
         self.draw()
     
     def zoom(self,option):
@@ -396,6 +430,9 @@ def np64_to_utc(np64_dt):
 
 def np64_to_unix(timestamp):
     return (timestamp - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+
+def datetime_to_unix(timestamp):
+    return (timestamp - datetime.datetime(1970,1,1,tzinfo = pytz.utc)).total_seconds()
 
 def labview_to_unix(timestamps):
     newtimestamps = list(map(lambda x: x -2082844800 ,timestamps))
