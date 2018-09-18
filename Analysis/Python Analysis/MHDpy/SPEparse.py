@@ -35,7 +35,35 @@ import MHDpy.importing
 from nptdms import TdmsFile as TF
 
 
+def get_gatedelays(spe_file):
+    num_frames = spe_file.nframes
+    
+    Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
+    
+    start_gatedelay = int(Gatinginfo.StartingGate.Pulse['delay'])
+    end_gatedelay = int(Gatinginfo.EndingGate.Pulse['delay'])
+    
+    gatedelays = np.linspace(start_gatedelay, end_gatedelay, num_frames)
 
+    return gatedelays
+
+def SPE2df_seq_spect(spefilepath):
+    spe_file = sl.load_from_files([spefilepath])
+
+    frames  = spe_file.data
+    gatedelays = get_gatedelays(spe_file)
+    wavelength = spe_file.wavelength
+    
+    datamatrix = np.zeros((len(wavelength),len(gatedelays)))
+    
+    i = 0
+    for frame in frames:
+        datamatrix[:,i] = frame[0]
+        i = i+1
+        
+    spectraldf = pd.DataFrame(datamatrix, index = wavelength, columns = gatedelays)    
+    
+    return spectraldf
 
 
             
@@ -45,28 +73,15 @@ def SPEtoTDMS_seq(spefilepath,meastype):
     
     folder = os.path.splitext(os.path.dirname(spefilepath))[0]
     base = os.path.splitext(os.path.basename(spefilepath))[0]
-
     tdmsfilepath = os.path.join(folder,base + ".tdms")
+
     spe_file = sl.load_from_files([spefilepath])
 
-    frames  = spe_file.data
+    frames  = spe_file.data   
+    gatedelays = get_gatedelays(spe_file)
     
-    num_frames = spe_file.nframes
-    
-    Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
-    
-    start_gatedelay = int(Gatinginfo.StartingGate.Pulse['delay'])
-    end_gatedelay = int(Gatinginfo.EndingGate.Pulse['delay'])
-    
-    gatedelays = np.linspace(start_gatedelay, end_gatedelay, num_frames)
-    
-    
-    root_object = RootObject(properties={
-        "prop1": "foo",
-    })
-    
-    common_group_object = GroupObject("Common", properties={
-    })
+    root_object = RootObject(properties={})    
+    common_group_object = GroupObject("Common", properties={})
     
     with TdmsWriter(tdmsfilepath) as tdms_writer:   
         channel_object = ChannelObject("Common", "Gate Delays" ,gatedelays, properties={})
@@ -80,7 +95,8 @@ def SPEtoTDMS_seq(spefilepath,meastype):
         write_spectra(tdmsfilepath, root_object, frames,wavelength )
     if(meastype == 1):
         write_image(tdmsfilepath, root_object, frames )
-    
+
+
 def write_image(tdmsfilepath, root_object, frames ):
     framenum = 0
     
@@ -127,40 +143,70 @@ def getlaserdata():
     
     return laserseries
     
-def SPE2df_seq_spect(spefilepath):
-    spe_file = sl.load_from_files([spefilepath])
 
-    frames  = spe_file.data
+def cutSpectraldf(spectraldf, wl1 = None,wl2 = None):
     
-    num_frames = spe_file.nframes
-    
-    Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
-    
-    start_gatedelay = int(Gatinginfo.StartingGate.Pulse['delay'])
-    end_gatedelay = int(Gatinginfo.EndingGate.Pulse['delay'])
-    
-    gatedelays = np.linspace(start_gatedelay, end_gatedelay, num_frames)
-    
-    wavelength = spe_file.wavelength
-    
-    datamatrix = np.zeros((len(wavelength),len(gatedelays)))
-    
-    i = 0
-    for frame in frames:
-        datamatrix[:,i] = frame[0]
-        i = i+1
+        if wl1 == None:
+            wl1 = spectraldf.index.min()
+        if wl2 == None:
+            wl2 = spectraldf.index.max()
+        wavelength = spectraldf.index
+
+        idx1 = wavelength.get_loc(wl1, method = 'nearest')
+        idx2 = wavelength.get_loc(wl2, method = 'nearest')
         
-    spectraldf = pd.DataFrame(datamatrix, index = wavelength, columns = gatedelays)    
-    
-    return spectraldf
+        wavelength_cut = wavelength[idx1:idx2]
+        spectra_cut = spectraldf.iloc[idx1:idx2]
         
+        return wavelength_cut, spectra_cut
+
+def maxandarea(wavelength_cut, spectra_cut):
+    areas = pd.Series(index = spectra_cut.columns)
+    maximums = pd.Series(index = spectra_cut.columns)
+    
+    for gatedelay in spectra_cut.columns:
+        areas[gatedelay] = np.trapz(spectra_cut[gatedelay],wavelength_cut)
+        maximums[gatedelay] = spectra_cut[gatedelay].max()      
+        
+    return areas, maximums
+
+def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None):
+    wavelength_cut, spectra_cut = cutSpectraldf(spectraldf,wl1,wl2)
+
+    areas, maximums = maxandarea(wavelength_cut, spectra_cut)
+    
+    if wl1_fit == None:
+        wl1_fit = maximums.index.min()
+    if wl2_fit == None:
+        wl2_fit = maximums.index.max()
+    
+    idx1 = maximums.index.get_loc(wl1_fit, method = 'nearest')
+    idx2 = maximums.index.get_loc(wl2_fit, method = 'nearest')
+    
+    gatedelays = maximums.index[idx1:idx2]
+    maximums = np.log(maximums.iloc[idx1:idx2])
+    
+    gatedelays
+    maximums
+    
+    fitcoef = np.polyfit(gatedelays,maximums,1)
+    
+    gatedelays_fit = np.linspace(gatedelays.min(),gatedelays.max(),100)
+    fit = fitcoef[1] + fitcoef[0]*gatedelays_fit
+    
+    fit = np.exp(fit)
+    
+    return fit, gatedelays_fit, fitcoef
+
+
 class SpectraPlot():
     
     def __init__(self,spectra,wavelength):
         self.fig, self.ax1 = plt.subplots(figsize = (8,6))
         self.ax1.plot(wavelength,spectra)
         self.ax1.set_xlabel("Wavelength (nm)")
-        self.ax1.ylabel("Intensity (a.u.)")
+        self.ax1.set_ylabel("Intensity (a.u.)")
+
     
 class PLplot_new():
     
@@ -225,71 +271,15 @@ class PLplot_new():
         
         # Make the y-axis label, ticks and tick labels match the line color.
 
-def cutSpectraldf(spectraldf, wl1 = None,wl2 = None):
-    
-        if wl1 == None:
-            wl1 = spectraldf.index.min()
-        if wl2 == None:
-            wl2 = spectraldf.index.max()
-        wavelength = spectraldf.index
-
-        idx1 = wavelength.get_loc(wl1, method = 'nearest')
-        idx2 = wavelength.get_loc(wl2, method = 'nearest')
-        
-        wavelength_cut = wavelength[idx1:idx2]
-        spectra_cut = spectraldf.iloc[idx1:idx2]
-        
-        return wavelength_cut, spectra_cut
-
-def maxandarea(wavelength_cut, spectra_cut):
-    areas = pd.Series(index = spectra_cut.columns)
-    maximums = pd.Series(index = spectra_cut.columns)
-    
-    for gatedelay in spectra_cut.columns:
-        areas[gatedelay] = np.trapz(spectra_cut[gatedelay],wavelength_cut)
-        maximums[gatedelay] = spectra_cut[gatedelay].max()      
-        
-    return areas, maximums
-
-def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None):
-    wavelength_cut, spectra_cut = cutSpectraldf(spectraldf,wl1,wl2)
-
-    areas, maximums = maxandarea(wavelength_cut, spectra_cut)
-    
-    if wl1_fit == None:
-        wl1_fit = maximums.index.min()
-    if wl2_fit == None:
-        wl2_fit = maximums.index.max()
-    
-    idx1 = maximums.index.get_loc(wl1_fit, method = 'nearest')
-    idx2 = maximums.index.get_loc(wl2_fit, method = 'nearest')
-    
-    gatedelays = maximums.index[idx1:idx2]
-    maximums = np.log(maximums.iloc[idx1:idx2])
-    
-    gatedelays
-    maximums
-    
-    fitcoef = np.polyfit(gatedelays,maximums,1)
-    
-    gatedelays_fit = np.linspace(gatedelays.min(),gatedelays.max(),100)
-    fit = fitcoef[1] + fitcoef[0]*gatedelays_fit
-    
-    fit = np.exp(fit)
-    
-    return fit, gatedelays_fit, fitcoef
-
-
-
-
 
     #TRPL lifetime pseudo code
     # inputs: SPE TRPL sequence, powermeter tdms file, SPE file of camera 2 sequence (laser timing)
     # parse SPE file to obtain spectra dataframe
+    # normalize the dataframe to power 
     # plot the time decay along with the power meter and laser timing to make sure that there is steady state
     # Use time sequence to parse the power meter file
-    # normalize the dataframe to power
-    # plot the normalized decay
+    
     # make this a modular funciton so that the code can be used to parse series of test cases
+    # returns fitparameters
     
    
