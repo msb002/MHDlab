@@ -1,41 +1,20 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-
-import spe2py as spe
-import spe_loader as sl
-
-import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-
-mpl.rcParams.update({'font.size': 18})
-
-
-
+import numpy as np
 from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
-
+import spe2py as spe
+import spe_loader as sl
 import pandas as pd
-
 import os
 import sys
 
-#Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
-if not PythonAnalysisPath in sys.path:
-    sys.path.append(PythonAnalysisPath)
-
-import MHDpy.importing
-
-from nptdms import TdmsFile as TF
-
+mpl.rcParams.update({'font.size': 18})
 
 def get_gatedelays(spe_file):
+    #pull a gate delay array a sequential SPE file. 
     num_frames = spe_file.nframes
     
     Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
@@ -48,6 +27,7 @@ def get_gatedelays(spe_file):
     return gatedelays
 
 def SPE2df_seq_spect(spefilepath):
+    #convert a sequential spectral SPE file to a pandas dataframe with one axis wl and other axis gate delay.
     spe_file = sl.load_from_files([spefilepath])
 
     frames  = spe_file.data
@@ -64,10 +44,9 @@ def SPE2df_seq_spect(spefilepath):
     spectraldf = pd.DataFrame(datamatrix, index = wavelength, columns = gatedelays)    
     
     return spectraldf
-
-
-            
+        
 def SPEtoTDMS_seq(spefilepath,meastype):
+    #convert a sequential SPE file (image or spectral) into a Tdms file. 
     if isinstance(spefilepath,bytes): #The labview addin passes a bytes instead of string. 
         spefilepath = spefilepath.decode("utf-8")
     
@@ -98,6 +77,7 @@ def SPEtoTDMS_seq(spefilepath,meastype):
 
 
 def write_image(tdmsfilepath, root_object, frames ):
+    #subroutine for writing a series of images to a tdms file. 
     framenum = 0
     
     with TdmsWriter(tdmsfilepath, mode = 'a') as tdms_writer:
@@ -111,59 +91,39 @@ def write_image(tdmsfilepath, root_object, frames ):
             framenum = framenum +1   
             
 def write_spectra(tdmsfilepath, root_object, frames, wavelength ):
+    #subroutine for writing a series of spectra to a tmds file. 
     framenum = 0
     
-    rawdata_group_object = GroupObject("Raw Data", properties={
-    })
+    rawdata_group_object = GroupObject("Raw Data", properties={})
     
     with TdmsWriter(tdmsfilepath, mode = 'a') as tdms_writer:   
         for frame in frames:
             channel_object = ChannelObject("Raw Data", "Frame" + str(framenum), frame[0][0], properties={})
             tdms_writer.write_segment([root_object,rawdata_group_object,channel_object])
             framenum = framenum +1
-    
-    
-def getlaserdata():
-    pathnames_laser= MHDpy.importing.get_pathnames("C:\\Users\\aspit\\OneDrive\\Data\\LaserProfile")
-    file_laser = TF(pathnames_laser['Test1_20Hz.tdms'])
-    
-    
-    laser_common = file_laser.object('Raw').as_dataframe()
-    laser_data = file_laser.object('Average').as_dataframe()
-    
-    
-    laser_time = laser_common['Time1']
-    laser_data = laser_data['Mean']
-    laser_data_norm = laser_data/laser_data.max()
-    #offset_time = 870
-    offset_time = 35
-    laser_time_off = laser_time - offset_time
-    
-    laserseries = pd.Series(laser_data_norm.values, index = laser_time_off)
-    
-    return laserseries
-    
+
 
 def cutSpectraldf(spectraldf, wl1 = None,wl2 = None):
+    #cut up a spectral dataframe between two wavelenghts.
+    wavelength = spectraldf.index
+    if wl1 == None:
+        wl1 = wavelength.min()
+    if wl2 == None:
+        wl2 = wavelength.max()
     
-        if wl1 == None:
-            wl1 = spectraldf.index.min()
-        if wl2 == None:
-            wl2 = spectraldf.index.max()
-        wavelength = spectraldf.index
+    idx1 = wavelength.get_loc(wl1, method = 'nearest')
+    idx2 = wavelength.get_loc(wl2, method = 'nearest')
 
-        idx1 = wavelength.get_loc(wl1, method = 'nearest')
-        idx2 = wavelength.get_loc(wl2, method = 'nearest')
-        
-        wavelength_cut = wavelength[idx1:idx2]
-        spectra_cut = spectraldf.iloc[idx1:idx2]
-        
-        return wavelength_cut, spectra_cut
+    spectra_cut = spectraldf.iloc[idx1:idx2]
+    
+    return spectra_cut
 
-def maxandarea(wavelength_cut, spectra_cut):
+def maxandarea(spectra_cut):
+    #calculate the area and maximum of a peak in a cut sepectral dataframe
     areas = pd.Series(index = spectra_cut.columns)
     maximums = pd.Series(index = spectra_cut.columns)
-    
+
+    wavelength_cut = spectra_cut.index
     for gatedelay in spectra_cut.columns:
         areas[gatedelay] = np.trapz(spectra_cut[gatedelay],wavelength_cut)
         maximums[gatedelay] = spectra_cut[gatedelay].max()      
@@ -171,9 +131,9 @@ def maxandarea(wavelength_cut, spectra_cut):
     return areas, maximums
 
 def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None):
-    wavelength_cut, spectra_cut = cutSpectraldf(spectraldf,wl1,wl2)
-
-    areas, maximums = maxandarea(wavelength_cut, spectra_cut)
+    #fit the log of a PL decay to a line, and return the fit line and coefficients
+    spectra_cut = cutSpectraldf(spectraldf,wl1,wl2)
+    areas, maximums = maxandarea(spectra_cut)
     
     if wl1_fit == None:
         wl1_fit = maximums.index.min()
@@ -186,9 +146,6 @@ def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None)
     gatedelays = maximums.index[idx1:idx2]
     maximums = np.log(maximums.iloc[idx1:idx2])
     
-    gatedelays
-    maximums
-    
     fitcoef = np.polyfit(gatedelays,maximums,1)
     
     gatedelays_fit = np.linspace(gatedelays.min(),gatedelays.max(),100)
@@ -200,7 +157,7 @@ def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None)
 
 
 class SpectraPlot():
-    
+    #plot of a simple intensity vs wavelength spectra
     def __init__(self,spectra,wavelength):
         self.fig, self.ax1 = plt.subplots(figsize = (8,6))
         self.ax1.plot(wavelength,spectra)
@@ -209,41 +166,30 @@ class SpectraPlot():
 
     
 class PLplot_new():
-    
+    #plot of a PL decay. First initializes the figure by adding a laser profile, then you call add_decay to add further PL decay plots
     def __init__(self, laserseries):
-        self.laserseries = laserseries
-        
         self.fig, self.ax1 = plt.subplots(figsize = (8,6))
         
         self.ax1.set_xlabel("Gate Delay (ns)")
         self.ax1.set_ylabel("$Delta$ PL Intensity (Normalized)")
         self.ax1.tick_params('y')
-        
-        self.ax2 = self.ax1.twinx()
-        
-        self.ax2.set_ylabel("Laser Intensity (Normalized)")
-        self.ax2.tick_params('y')
-        
-        self.laserline = self.ax2.plot(self.laserseries.index, self.laserseries, '--', color = 'gray', label = 'Laser profile')
-        
-        self.ax2.set_yscale('log')
         self.ax1.set_yscale('log')
         
-        self.lns = self.laserline
+        self.ax2 = self.ax1.twinx()
+        self.ax2.set_ylabel("Laser Intensity (Normalized)")
+        self.ax2.tick_params('y')
+        self.ax2.set_yscale('log')
+        
+        self.lns = self.ax2.plot(laserseries.index, laserseries, '--', color = 'gray', label = 'Laser profile')
         
         self.setlegend()
-        
-        
         self.fig.suptitle('PL Plot', y = 1)
         self.fig.tight_layout()
         
     def add_decay(self,spectraldf, label,method = "max", wl1 = None ,wl2 = None, color = None):
+        spectra_cut = cutSpectraldf(spectraldf, wl1,wl2)
         
-
-
-        wavelength_cut, spectra_cut = cutSpectraldf(spectraldf, wl1,wl2)
-        
-        areas, maximums = maxandarea(wavelength_cut, spectra_cut)
+        areas, maximums = maxandarea(spectra_cut)
         
         if color == None:
             colorlist = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
@@ -257,29 +203,24 @@ class PLplot_new():
         self.lns = self.lns + ln
         
         self.legend.remove()
-        self.setlegend()
-        #self.legend.remove()
-        #self.legend(self.lns)
-        
+        self.setlegend()       
 
     def setlegend(self):
+        #iterate through lines and make a label
         labs = [l.get_label() for l in self.lns]
         self.legend = self.ax1.legend(self.lns, labs, loc=0)
-        #self.ax1.legend(self.lns,labs)
-        
-        
         
         # Make the y-axis label, ticks and tick labels match the line color.
 
 
-    #TRPL lifetime pseudo code
-    # inputs: SPE TRPL sequence, powermeter tdms file, SPE file of camera 2 sequence (laser timing)
-    # parse SPE file to obtain spectra dataframe
-    # normalize the dataframe to power 
-    # plot the time decay along with the power meter and laser timing to make sure that there is steady state
-    # Use time sequence to parse the power meter file
-    
-    # make this a modular funciton so that the code can be used to parse series of test cases
-    # returns fitparameters
+#TRPL lifetime pseudo code
+# inputs: SPE TRPL sequence, powermeter tdms file, SPE file of camera 2 sequence (laser timing)
+# parse SPE file to obtain spectra dataframe
+# normalize the dataframe to power 
+# plot the time decay along with the power meter and laser timing to make sure that there is steady state
+# Use time sequence to parse the power meter file
+
+# make this a modular funciton so that the code can be used to parse series of test cases
+# returns fitparameters
     
    
