@@ -2,15 +2,22 @@
 import json
 import time
 import pathlib
+import datetime
 
 def writeevent(Eventlogfile, event):
+    eventnew = {}
+    timestamp = time.time()
+    eventnew['hrdt'] = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    eventnew['dt'] = timestamp
+    eventnew['event'] = event
+    
     with open(Eventlogfile, "r") as read_file:
         try:
             eventloglist = json.load(read_file)
         except ValueError: #Empty file
             eventloglist = []
     with open(Eventlogfile, "w") as write_file:
-        eventloglist.append(event)
+        eventloglist.append(eventnew)
         json.dump(eventloglist, write_file, indent=2) 
 
 class Eventlog():
@@ -43,8 +50,6 @@ class Eventlog():
         measurementnumber = TestDataInfo[3]
 
         event = {
-        "dt": time.time(),
-        "event": {
             "type" : "TestCaseInfoChange",
             "event info": {
                 "project": project,
@@ -52,7 +57,6 @@ class Eventlog():
                 "filename": filename,
                 "measurementnumber": measurementnumber 
                 }
-            }
         }
 
         writeevent(self.Eventlogfile, event)
@@ -61,28 +65,22 @@ class Eventlog():
 
     def RunningVIsChange(self,VIname,OnOff):
         event = {
-        "dt": time.time(),
-        "event": {
             "type" : "VIRunningChange",
             "event info": {
                 "name" : VIname.decode("utf-8"),
                 "newstate" : OnOff
                 }
-            }
         }
 
         writeevent(self.Eventlogfile,event) 
 
     def SavingVIsChange(self, VIname,OnOff):
         event = {
-        "dt": time.time(),
-        "event": {
             "type" : "VISavingChange",
             "event info": {
                 "name" : VIname.decode("utf-8"),
                 "newstate" : OnOff
                 }
-            }
         }
 
         writeevent(self.Eventlogfile,event)
