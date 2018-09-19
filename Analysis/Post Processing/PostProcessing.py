@@ -19,6 +19,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
+import pproutines
+
 import layout
 
 #Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
@@ -35,6 +37,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+import inspect
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
@@ -53,14 +57,21 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
-        self.btn_parse.clicked.connect(lambda : self.parse_tdms_file(internalfile = True))
+
+        self.btn_parse_int.clicked.connect(lambda : self.parse_tdms_file(internalfile = True))
         self.btn_parse_ext.clicked.connect(lambda : self.parse_tdms_file(internalfile = False))
         self.btn_parse_tci.clicked.connect(self.parse_tdms_eventlog)
+        self.btn_parse.clicked.connect(self.run_routine)
+
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
 
         self.channel = None # replace in __init__
         self.eventlog = None
+
+        self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction)]
+        routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction)]
+        self.combo_routines.insertItems(0,routineliststr)
 
     def open_tdmsfile(self, filepath= 0):
         if(filepath == 0):
@@ -247,6 +258,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             filepath =   filepath + '.tdms'
             cut_tdms_file(times[i],times[i+1],filepath,self.Logfiletdms)
 
+    def run_routine(self):
+        index = self.combo_routines.currentIndex()
+        function = self.routinelist[index]
+        function('test')
 
 class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, mainwindow, parent = None, width =5, height = 4, dpi = 100):

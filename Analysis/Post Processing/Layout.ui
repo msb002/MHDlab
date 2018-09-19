@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>775</width>
-    <height>565</height>
+    <width>776</width>
+    <height>622</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -71,7 +71,7 @@
      <string>Refresh</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btn_parse">
+   <widget class="QPushButton" name="btn_parse_int">
     <property name="geometry">
      <rect>
       <x>330</x>
@@ -503,13 +503,82 @@
      <string>Parse TCI</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="combo_routines">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>530</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_13">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>510</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>routine</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_14">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>510</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>File(s)</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="combo_files">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>530</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Internal</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Dialog</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QPushButton" name="btn_parse">
+    <property name="geometry">
+     <rect>
+      <x>220</x>
+      <y>520</y>
+      <width>111</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Parse</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>775</width>
+     <width>776</width>
      <height>26</height>
     </rect>
    </property>
