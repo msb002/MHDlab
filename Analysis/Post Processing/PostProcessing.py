@@ -246,7 +246,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         else:
             tci = []
             times = []
-            for event in self.jsonfile:
+            for event in self.jsonfile: #just do get_tci instead??
                 if event['event']['type'] == 'TestCaseInfoChange':
                     time = datetime.datetime.utcfromtimestamp(event['dt'])
                     time = time.replace(tzinfo=pytz.utc)

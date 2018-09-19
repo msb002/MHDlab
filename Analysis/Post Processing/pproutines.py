@@ -23,7 +23,7 @@ import layout
 import various
 
 
-def cut_tdms_file(fileinpath, fileoutpath, time1, time2):
+def cut_log_file(fileinpath, fileoutpath, time1, time2):
     tdmsfile = TF(fileinpath)
     direc = os.path.split(fileoutpath)[0]
     if not os.path.exists(direc):
