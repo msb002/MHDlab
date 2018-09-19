@@ -59,9 +59,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
 
-        self.btn_parse_int.clicked.connect(lambda : self.parse_tdms_file(internalfile = True))
-        self.btn_parse_ext.clicked.connect(lambda : self.parse_tdms_file(internalfile = False))
-        self.btn_parse_tci.clicked.connect(self.parse_tdms_eventlog)
+
         self.btn_parse.clicked.connect(self.run_routine)
 
         self.btn_open.clicked.connect(self.open_tdmsfile)
@@ -222,56 +220,15 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return testcaseinfoarray
 
-    def parse_tdms_file(self, internalfile):
-        pass
-        # #parse a file based on the seleted times, internal or external
-        # folder = self.folderEdit.text()
-        # filename = self.filenameEdit.text()
-
-        # if(internalfile):
-        #     filepath = os.path.join(self.datefolder, folder, filename)
-        #     filepath =   filepath + '.tdms'
-        #     cut_tdms_file(self.time1,self.time2,filepath,self.Logfiletdms)
-        # else:
-        #     paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
-        #     filepathext = paths[0]
-        #     tdmsfile = TF(filepathext)
-        #     origfilename = os.path.splitext(os.path.split(filepathext)[1])[0]
-        #     filepath = os.path.join(self.datefolder, folder, origfilename)
-        #     filepath =   filepath + '.tdms'
-        #     cut_tdms_file(self.time1,self.time2,filepath,tdmsfile)
-
-    def parse_tdms_eventlog(self):
-        pass
-        # #parse internal tdms file based on the test case info array
-        # self.tci = self.gettestcaseinfo()
-        # tci = []
-        # times = []
-        # i=0
-        # for event in self.jsonfile:
-        #     if event['event']['type'] == 'TestCaseInfoChange':
-        #         time = datetime.datetime.utcfromtimestamp(event['dt'])
-        #         time = time.replace(tzinfo=pytz.utc)
-        #         times.append(time)
-        #         tci.append(event['event']['event info'])
-        # i=0
-        # for i in range(len(times)-1):
-        #     folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
-        #     filename = self.origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
-        #     filepath = os.path.join(self.datefolder, folder, filename)
-        #     filepath =   filepath + '.tdms'
-        #     cut_tdms_file(times[i],times[i+1],filepath,self.Logfiletdms)
-
     def run_routine(self):
         index = self.combo_routines.currentIndex()
-        function = self.routinelist[index]
+        pp_function = self.routinelist[index]
 
         #parse a file based on the seleted times, internal or external
         folder = self.folderEdit.text()
         filename = self.filenameEdit.text()
 
         isinternalfile = not (self.combo_files.currentIndex())
-        print(isinternalfile)
 
         if(isinternalfile):
             fileinpath = self.logfilepath
@@ -281,29 +238,27 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         origfilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
         timetype = self.combo_times.currentIndex()
+
         if timetype:
             fileoutpath = os.path.join(self.datefolder, folder, filename)
             fileoutpath =   fileoutpath + '.tdms'
-            pproutines.cut_tdms_file(fileinpath, fileoutpath, self.time1, self.time2)
+            pp_function(fileinpath, fileoutpath, self.time1, self.time2)
         else:
-            #self.tci = self.gettestcaseinfo()
             tci = []
             times = []
-            i=0
             for event in self.jsonfile:
                 if event['event']['type'] == 'TestCaseInfoChange':
                     time = datetime.datetime.utcfromtimestamp(event['dt'])
                     time = time.replace(tzinfo=pytz.utc)
                     times.append(time)
                     tci.append(event['event']['event info'])
-            print(times)
             i=0
             for i in range(len(times)-1):
                 folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
                 filename = origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
                 fileoutpath = os.path.join(self.datefolder, folder, filename)
                 fileoutpath =   fileoutpath + '.tdms'
-                pproutines.cut_tdms_file(fileinpath, fileoutpath, times[i],times[i+1])
+                pp_function(fileinpath, fileoutpath, times[i],times[i+1])
 
 
 
