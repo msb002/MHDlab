@@ -10,6 +10,7 @@ import spe_loader as sl
 import pandas as pd
 import os
 import sys
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 mpl.rcParams.update({'font.size': 18})
 
@@ -211,6 +212,29 @@ class PLplot_new():
         self.legend = self.ax1.legend(self.lns, labs, loc=0)
         
         # Make the y-axis label, ticks and tick labels match the line color.
+
+def parse_lasertiming(folderpath):
+    filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
+    filenames = [f for f in filenames if os.path.splitext(os.path.join(folderpath,f))[1] == '.spe']
+
+    spe_file = sl.load_from_files([os.path.join(folderpath,filenames[0])])
+    gatedelays = get_gatedelays(spe_file)
+    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
+    
+    i=0
+    for filename in filenames:
+        spe_file = sl.load_from_files([os.path.join(folderpath,filename)])
+        frames  = spe_file.data
+        intensity = list(map(lambda x: x[0].max(), frames))
+        try:
+            intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
+            i=i+1
+        except ValueError: #comes up if there is an incomplete file. 
+            print(filename, ' did not have correct number of data points')
+    intensities = intensities.truncate(after = i, axis = 'columns')
+
+
+parse_lasertiming('C:\\Labview Test Data\\2018-09-17\\Logfiles\\PI_Cam2')
 
 
 #TRPL lifetime pseudo code
