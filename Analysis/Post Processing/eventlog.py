@@ -10,7 +10,7 @@ def writeevent(Eventlogfile, event):
     eventnew['hrdt'] = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     eventnew['dt'] = timestamp
     eventnew['event'] = event
-    
+
     with open(Eventlogfile, "r") as read_file:
         try:
             eventloglist = json.load(read_file)
@@ -84,3 +84,15 @@ class Eventlog():
         }
 
         writeevent(self.Eventlogfile,event)
+
+    def customevent(self, eventstr):
+        eventstr = eventstr.decode("utf-8")
+        event = {
+            "type" : "CustomEvent",
+            "event info": {
+                "customeventstring" : eventstr
+                }
+        }
+
+        writeevent(self.Eventlogfile,event)
+
