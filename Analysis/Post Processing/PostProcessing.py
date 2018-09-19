@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 
 import pproutines
+import various
 
 import layout
 
@@ -70,8 +71,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.eventlog = None
 
         self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction)]
-        routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction)]
-        self.combo_routines.insertItems(0,routineliststr)
+        self.routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction)]
+        self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):
         if(filepath == 0):
@@ -83,6 +84,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             
             self.origfilename = os.path.splitext(os.path.split(filepath)[1])[0]
             self.Logfiletdms = TF(filepath)
+            self.logfilepath = filepath
             folder = os.path.split(filepath)[0]
 
             #search upward in file directory for eventlog.json, then set that as the date folder
@@ -119,12 +121,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #update_time_displays : updates the time inputs to max and min of channel
         self.timearray = channels[0].time_track(absolute_time = True)
-        self.timedata = list(map(lambda x: np64_to_utc(x),self.timearray))
+        self.timedata = list(map(lambda x: various.np64_to_utc(x),self.timearray))
 
         startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(np64_to_unix(self.timearray[0]))
+        startdatetime.setTime_t(various.np64_to_unix(self.timearray[0]))
         enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(np64_to_unix(self.timearray[-1]))
+        enddatetime.setTime_t(various.np64_to_unix(self.timearray[-1]))
 
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
@@ -160,8 +162,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def update_stats(self,channel):
         #update the statistics calculations and display
-        idx1 = nearest_timeind(self.timedata,self.time1)
-        idx2 = nearest_timeind(self.timedata,self.time2)
+        idx1 = various.nearest_timeind(self.timedata,self.time1)
+        idx2 = various.nearest_timeind(self.timedata,self.time2)
         if len(channel.data[idx1:idx2]) > 0:
             self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
             self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
@@ -221,47 +223,89 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return testcaseinfoarray
 
     def parse_tdms_file(self, internalfile):
-        #parse a file based on the seleted times, internal or external
-        folder = self.folderEdit.text()
-        filename = self.filenameEdit.text()
+        pass
+        # #parse a file based on the seleted times, internal or external
+        # folder = self.folderEdit.text()
+        # filename = self.filenameEdit.text()
 
-        if(internalfile):
-            filepath = os.path.join(self.datefolder, folder, filename)
-            filepath =   filepath + '.tdms'
-            cut_tdms_file(self.time1,self.time2,filepath,self.Logfiletdms)
-        else:
-            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
-            filepathext = paths[0]
-            tdmsfile = TF(filepathext)
-            origfilename = os.path.splitext(os.path.split(filepathext)[1])[0]
-            filepath = os.path.join(self.datefolder, folder, origfilename)
-            filepath =   filepath + '.tdms'
-            cut_tdms_file(self.time1,self.time2,filepath,tdmsfile)
+        # if(internalfile):
+        #     filepath = os.path.join(self.datefolder, folder, filename)
+        #     filepath =   filepath + '.tdms'
+        #     cut_tdms_file(self.time1,self.time2,filepath,self.Logfiletdms)
+        # else:
+        #     paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
+        #     filepathext = paths[0]
+        #     tdmsfile = TF(filepathext)
+        #     origfilename = os.path.splitext(os.path.split(filepathext)[1])[0]
+        #     filepath = os.path.join(self.datefolder, folder, origfilename)
+        #     filepath =   filepath + '.tdms'
+        #     cut_tdms_file(self.time1,self.time2,filepath,tdmsfile)
 
     def parse_tdms_eventlog(self):
-        #parse internal tdms file based on the test case info array
-        self.tci = self.gettestcaseinfo()
-        tci = []
-        times = []
-        i=0
-        for event in self.jsonfile:
-            if event['event']['type'] == 'TestCaseInfoChange':
-                time = datetime.datetime.utcfromtimestamp(event['dt'])
-                time = time.replace(tzinfo=pytz.utc)
-                times.append(time)
-                tci.append(event['event']['event info'])
-        i=0
-        for i in range(len(times)-1):
-            folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
-            filename = self.origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
-            filepath = os.path.join(self.datefolder, folder, filename)
-            filepath =   filepath + '.tdms'
-            cut_tdms_file(times[i],times[i+1],filepath,self.Logfiletdms)
+        pass
+        # #parse internal tdms file based on the test case info array
+        # self.tci = self.gettestcaseinfo()
+        # tci = []
+        # times = []
+        # i=0
+        # for event in self.jsonfile:
+        #     if event['event']['type'] == 'TestCaseInfoChange':
+        #         time = datetime.datetime.utcfromtimestamp(event['dt'])
+        #         time = time.replace(tzinfo=pytz.utc)
+        #         times.append(time)
+        #         tci.append(event['event']['event info'])
+        # i=0
+        # for i in range(len(times)-1):
+        #     folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
+        #     filename = self.origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
+        #     filepath = os.path.join(self.datefolder, folder, filename)
+        #     filepath =   filepath + '.tdms'
+        #     cut_tdms_file(times[i],times[i+1],filepath,self.Logfiletdms)
 
     def run_routine(self):
         index = self.combo_routines.currentIndex()
         function = self.routinelist[index]
-        function('test')
+
+        #parse a file based on the seleted times, internal or external
+        folder = self.folderEdit.text()
+        filename = self.filenameEdit.text()
+
+        isinternalfile = not (self.combo_files.currentIndex())
+        print(isinternalfile)
+
+        if(isinternalfile):
+            fileinpath = self.logfilepath
+        else:
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
+            fileinpath = paths[0]
+
+        origfilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+        timetype = self.combo_times.currentIndex()
+        if timetype:
+            fileoutpath = os.path.join(self.datefolder, folder, filename)
+            fileoutpath =   fileoutpath + '.tdms'
+            pproutines.cut_tdms_file(fileinpath, fileoutpath, self.time1, self.time2)
+        else:
+            #self.tci = self.gettestcaseinfo()
+            tci = []
+            times = []
+            i=0
+            for event in self.jsonfile:
+                if event['event']['type'] == 'TestCaseInfoChange':
+                    time = datetime.datetime.utcfromtimestamp(event['dt'])
+                    time = time.replace(tzinfo=pytz.utc)
+                    times.append(time)
+                    tci.append(event['event']['event info'])
+            print(times)
+            i=0
+            for i in range(len(times)-1):
+                folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
+                filename = origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
+                fileoutpath = os.path.join(self.datefolder, folder, filename)
+                fileoutpath =   fileoutpath + '.tdms'
+                pproutines.cut_tdms_file(fileinpath, fileoutpath, times[i],times[i+1])
+
+
 
 class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, mainwindow, parent = None, width =5, height = 4, dpi = 100):
@@ -328,7 +372,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                     self.annot.set_visible(False)
                     time = tick.get_xdata()
                     datetime = QtCore.QDateTime()
-                    datetime.setTime_t(datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
+                    datetime.setTime_t(various.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
                     if(self.lastselectedline == self.timeline1):
                         self.mainwindow.startTimeInput.setDateTime(datetime)
@@ -385,7 +429,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         #updates the figure with a new channel. 
 
         timearray = channel.time_track(absolute_time = True)
-        timearray = list(map(lambda x: np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        timearray = list(map(lambda x: various.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
         data = channel.data
 
         if self.dataline in self.axes.lines:
@@ -458,7 +502,6 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.axes.set_ylim(min(ydata),max(ydata))
         self.draw()
 
-
 #time conversion.
 def np64_to_utc(np64_dt):
     utc_dt = datetime.datetime.utcfromtimestamp(np64_to_unix(np64_dt)).replace(tzinfo=pytz.utc)
@@ -479,50 +522,6 @@ def nearest_timeind(timearray, pivot):
     seconds = np.array(list(map(lambda x: x.total_seconds(),diffs)))
     return seconds.argmin()
 
-def cut_tdms_file(time1, time2, fileoutpath, tdmsfile):
-
-    direc = os.path.split(fileoutpath)[0]
-    if not os.path.exists(direc):
-        os.makedirs(direc)
-
-    root_object = RootObject(properties={ #TODO root properties
-    })
-
-    timearray = None
-    delete = False
-    with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
-        for group in tdmsfile.groups():
-            channels = tdmsfile.group_channels(group)
-            for channel in channels:
-
-                if (timearray != channel.time_track(absolute_time = True)).all():
-                    timearray = channel.time_track(absolute_time = True)
-                    timedata = list(map(lambda x: np64_to_utc(x),timearray))
-
-                if(time2 > time1):
-                    idx1 = nearest_timeind(timedata,time1)
-                    idx2 = nearest_timeind(timedata,time2)
-                else:
-                    idx2 = nearest_timeind(timedata,time1)
-                    idx1 = nearest_timeind(timedata,time2)
-
-                if(idx1 == idx2): #times are not within file
-                    print('times not in file ' + tdmsfile.object().properties['name'])
-                    delete = True
-                    break
-
-                props = channel.properties
-                start= props['wf_start_time']
-                offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
-                props['wf_start_time'] = start + offset
-
-                channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
-                tdms_writer.write_segment([
-                    root_object,
-                    channel_object])
-
-    if delete:
-        os.remove(fileoutpath)
 
 app = QtWidgets.QApplication(sys.argv)
 
