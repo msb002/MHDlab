@@ -19,18 +19,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
-import pproutines
-import various
+import MHDpy.pproutines as pproutines
+import MHDpy.various as various
 
 import layout
-
-#Make sure Python Analysis folder in in PYTHONPATH and import the MHDpy module
-PythonAnalysisPath = 'C:\\Users\\aspit\\Git\\MHDLab\\Python Analysis'
-if not PythonAnalysisPath in sys.path:
-    sys.path.append(PythonAnalysisPath)
-
-
-
 import random
 import matplotlib as mpl
 from PyQt5 import QtCore, QtWidgets, QtGui

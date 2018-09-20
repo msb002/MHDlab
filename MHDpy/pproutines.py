@@ -18,9 +18,8 @@ import json
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-import layout
 
-import various
+import MHDpy.various
 
 
 def cut_log_file(fileinpath, fileoutpath, time1, time2):
