@@ -12,6 +12,15 @@ import pytz
 import tzlocal
 
 
+def get_indextime(timearray, time1,time2):
+    if(time2 > time1):
+        idx1 = various.nearest_timeind(timedata,time1)
+        idx2 = various.nearest_timeind(timedata,time2)
+    else:
+        idx2 = various.nearest_timeind(timedata,time1)
+        idx1 = various.nearest_timeind(timedata,time2)
+
+    return idx1,idx2
 
 
 #time conversion.

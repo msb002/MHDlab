@@ -60,8 +60,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.channel = None # replace in __init__
         self.eventlog = None
 
-        self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction)]
-        self.routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction)]
+        self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
+        self.routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
         self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):

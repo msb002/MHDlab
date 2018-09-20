@@ -19,7 +19,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
-import MHDpy.various
+import MHDpy.various as various
 
 
 def cut_log_file(fileinpath, fileoutpath, time1, time2):
@@ -42,18 +42,13 @@ def cut_log_file(fileinpath, fileoutpath, time1, time2):
                     timearray = channel.time_track(absolute_time = True)
                     timedata = list(map(lambda x: various.np64_to_utc(x),timearray))
 
-                if(time2 > time1):
-                    idx1 = various.nearest_timeind(timedata,time1)
-                    idx2 = various.nearest_timeind(timedata,time2)
-                else:
-                    idx2 = various.nearest_timeind(timedata,time1)
-                    idx1 = various.nearest_timeind(timedata,time2)
+                idx1, idx2 =  _get_indextime(timedata, time1,time2)
 
                 if(idx1 == idx2): #times are not within file
                     print('times not in file ' + tdmsfile.object().properties['name'])
                     delete = True
                     break
-
+                
                 props = channel.properties
                 start= props['wf_start_time']
                 offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
@@ -66,4 +61,17 @@ def cut_log_file(fileinpath, fileoutpath, time1, time2):
 
     if delete:
         os.remove(fileoutpath)
+
+
+
+def _get_indextime(timedata, time1,time2):
+    if(time2 > time1):
+        idx1 = various.nearest_timeind(timedata,time1)
+        idx2 = various.nearest_timeind(timedata,time2)
+    else:
+        idx2 = various.nearest_timeind(timedata,time1)
+        idx1 = various.nearest_timeind(timedata,time2)
+
+    return idx1,idx2
+
 
