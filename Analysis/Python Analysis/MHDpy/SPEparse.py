@@ -5,12 +5,14 @@ import matplotlib as mpl
 import numpy as np
 from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
-import spe2py as spe
+#import spe2py as spe
 import spe_loader as sl
 import pandas as pd
 import os
 import sys
 from PyQt5 import QtCore, QtWidgets, QtGui
+from dateutil import parser
+import datetime
 
 mpl.rcParams.update({'font.size': 18})
 
@@ -27,12 +29,31 @@ def get_gatedelays(spe_file):
 
     return gatedelays
 
+def get_starttimes(spe_file):
+    #pulls an array of exposure start times for each file
+    abstimestr = spe_file.footer.SpeFormat.MetaFormat.MetaBlock.TimeStamp[0]['absoluteTime']
+    abstime = parser.parse(abstimestr)
+    timestamp_idx = spe_file.metanames.index('ExposureStarted')
+    starttimestamps = np.array(list(map( lambda x: x[timestamp_idx], spe_file.metadata)))
+    res = int(spe_file.footer.SpeFormat.MetaFormat.MetaBlock.TimeStamp[0]['resolution'])
+    starttimestamps = starttimestamps/res
+    starttimedeltas = list(map(lambda x:datetime.timedelta(seconds = x),starttimestamps))
+    starttimes = [abstime + starttime for starttime in starttimedeltas] 
+    return starttimes
+
+
+    
+
+
+
+
 def SPE2df_seq_spect(spefilepath):
     #convert a sequential spectral SPE file to a pandas dataframe with one axis wl and other axis gate delay.
     spe_file = sl.load_from_files([spefilepath])
 
     frames  = spe_file.data
     gatedelays = get_gatedelays(spe_file)
+    timestamps = get_starttimes(spe_file)
     wavelength = spe_file.wavelength
     
     datamatrix = np.zeros((len(wavelength),len(gatedelays)))
@@ -219,8 +240,9 @@ def parse_lasertiming(folderpath):
 
     spe_file = sl.load_from_files([os.path.join(folderpath,filenames[0])])
     gatedelays = get_gatedelays(spe_file)
-    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
     
+    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
+    timestamps = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
     i=0
     for filename in filenames:
         spe_file = sl.load_from_files([os.path.join(folderpath,filename)])
@@ -228,13 +250,14 @@ def parse_lasertiming(folderpath):
         intensity = list(map(lambda x: x[0].max(), frames))
         try:
             intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
+            timestamps.iloc[:,i] = pd.Series(get_starttimes, index = timestamps.index)
             i=i+1
         except ValueError: #comes up if there is an incomplete file. 
             print(filename, ' did not have correct number of data points')
     intensities = intensities.truncate(after = i, axis = 'columns')
 
 
-parse_lasertiming('C:\\Labview Test Data\\2018-09-17\\Logfiles\\PI_Cam2')
+parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')
 
 
 #TRPL lifetime pseudo code
