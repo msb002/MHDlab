@@ -42,6 +42,8 @@ def create_ref(file):
             dic[group] = np.append(dic[group], channelname)
     return dic
 
+
+
 #Routines
 
 def getlaserdata():

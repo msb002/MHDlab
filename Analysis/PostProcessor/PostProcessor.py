@@ -183,12 +183,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         tci_cut = self.gettestcaseinfo(cut = True)
         basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-        folder, filename = self.get_fileinfo(tci_cut[-1])
+        folder, filename = self.gen_fileinfo(tci_cut[-1])
         filename = basefilename + filename
         self.folderEdit.setText(folder)    
         self.filenameEdit.setText(filename)
 
-    def get_fileinfo(self,tci_event):
+    def gen_fileinfo(self,tci_event):
             folder = tci_event['project'] + '\\'+ tci_event['subfolder']
             filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
             return folder, filename
@@ -229,13 +229,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             fileinpath = paths[0]
             basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
             tci_cut = self.gettestcaseinfo(cut = True)
-            folder, filename = self.get_fileinfo(tci_cut[-1])
+            folder, filename = self.gen_fileinfo(tci_cut[-1])
             filename = basefilename + filename
         
         timetype = self.combo_times.currentIndex()
 
         if timetype:
-            fileoutpath = os.path.join(self.datefolder, folder, filename)
+            fileoutpath = os.path.join(self.datefolder, folder, filename) 
             fileoutpath =   fileoutpath + '.tdms'
             pp_function(fileinpath, fileoutpath, self.time1, self.time2)
         else:
@@ -243,13 +243,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             i=0
             for i in range(len(tci)-1):
                 times = list(tci.keys())
-                folder, filename = self.get_fileinfo(tci[times[i]])
+                folder, filename = self.gen_fileinfo(tci[times[i]])
                 newfilename = basefilename + filename
                 fileoutpath = os.path.join(self.datefolder, folder, newfilename)
                 fileoutpath =   fileoutpath + '.tdms'
                 pp_function(fileinpath, fileoutpath, times[i],times[i+1])
-
-
 
 
 app = QtWidgets.QApplication(sys.argv)
