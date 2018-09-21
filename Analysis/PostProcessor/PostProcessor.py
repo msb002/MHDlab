@@ -237,7 +237,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if timetype:
             fileoutpath = os.path.join(self.datefolder, folder, filename) 
             fileoutpath =   fileoutpath + '.tdms'
-            pp_function(fileinpath, fileoutpath, self.time1, self.time2)
+            kwargs = {'fileinpath':fileinpath, 'fileoutpath':fileoutpath, 'time1':self.time1,'time2':self.time2}
+            pp_function(**kwargs)
         else:
             tci = self.gettestcaseinfo(cut = False)
             i=0
@@ -247,7 +248,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 newfilename = basefilename + filename
                 fileoutpath = os.path.join(self.datefolder, folder, newfilename)
                 fileoutpath =   fileoutpath + '.tdms'
-                pp_function(fileinpath, fileoutpath, times[i],times[i+1])
+                kwargs = {'fileinpath':fileinpath, 'fileoutpath':fileoutpath, 'time1':times[i], 'time2':times[i+1]}
+                pp_function(**kwargs)
 
 
 app = QtWidgets.QApplication(sys.argv)

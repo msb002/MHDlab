@@ -22,7 +22,7 @@ import scipy.stats as stats
 import MHDpy.various as various
 
 
-def cut_log_file(fileinpath, fileoutpath, time1, time2):
+def cut_log_file(fileinpath, fileoutpath, time1, time2, **kwargs):
     tdmsfile = TF(fileinpath)
 
     direc = os.path.split(fileoutpath)[0]
@@ -45,7 +45,7 @@ def cut_log_file(fileinpath, fileoutpath, time1, time2):
         print('removing the file at: \n', fileoutpath)
         os.remove(fileoutpath)
 
-def cut_powermeter(fileinpath, fileoutpath, time1, time2):
+def cut_powermeter(fileinpath, fileoutpath, time1, time2, **kwargs):
     tdmsfile = TF(fileinpath)
     direc = os.path.split(fileoutpath)[0]
     if not os.path.exists(direc):
@@ -68,6 +68,8 @@ def cut_powermeter(fileinpath, fileoutpath, time1, time2):
         print('removing the file at: \n', fileoutpath)
         os.remove(fileoutpath)
 
+def hello(**kwargs):
+    print('hello')
 
 def _cut_channel(channel,time1,time2, timedata = None):
 
@@ -102,4 +104,4 @@ def _get_indextime(timedata, time1,time2):
     return idx1,idx2
 
 if __name__ == '__main__':
-    print('hello')
+    pass
