@@ -186,31 +186,32 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.textBrowser.setText(string)
 
-        self.tci = self.gettestcaseinfo()
+        tci_cut = self.gettestcaseinfo(cut = True)
 
-        if(len(self.tci)>0):
-            folder = self.tci[-1]['project'] + '\\'+ self.tci[0]['subfolder']
+        if(len(tci_cut)>0):
+            folder = tci_cut[-1]['project'] + '\\'+ tci_cut[0]['subfolder']
             self.folderEdit.setText(folder)
-            filename = self.origfilename + '_' + self.tci[-1]['filename'] + '_'+ self.tci[-1]['measurementnumber'] + '_cut'
+            filename = self.origfilename + '_' + tci_cut[-1]['filename'] + '_'+ tci_cut[-1]['measurementnumber'] + '_cut'
             self.filenameEdit.setText(filename)
 
-    def gettestcaseinfo(self):
+    def gettestcaseinfo(self, cut = False):
         #pull the testcase info from the json file
-        testcaseinfo = {}
-        times = []
+        tci = {}
         for event in self.jsonfile:
             if event['event']['type'] == 'TestCaseInfoChange':
                 time = datetime.datetime.utcfromtimestamp(event['dt'])
                 time = time.replace(tzinfo=pytz.utc)
-                testcaseinfo[time] = event['event']['event info']
-                times.append(time)
-        #pull only those events before time1 (?)        
-        testcaseinfoarray = []
-        for time, tci in testcaseinfo.items():
-            if(time<self.time1): 
-                testcaseinfoarray.append(tci)
+                tci[time] = event['event']['event info']
 
-        return testcaseinfoarray
+        #pull only those events before time1 if cut is true
+        if(cut):
+            tci_cut = []
+            for time, event in tci.items():
+                if(time<self.time1): 
+                    tci_cut.append(event)
+            tci = tci_cut
+
+        return tci
 
     def run_routine(self):
         index = self.combo_routines.currentIndex()
@@ -219,7 +220,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         #parse a file based on the seleted times, internal or external
         folder = self.folderEdit.text()
         
-
         isinternalfile = not (self.combo_files.currentIndex())
 
         if(isinternalfile):
