@@ -72,7 +72,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             pass
         else:
             
-            self.origfilename = os.path.splitext(os.path.split(filepath)[1])[0]
+            
             self.Logfiletdms = TF(filepath)
             self.logfilepath = filepath
             folder = os.path.split(filepath)[0]
@@ -187,15 +187,19 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.textBrowser.setText(string)
 
         tci_cut = self.gettestcaseinfo(cut = True)
+        basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
+        folder, filename = self.get_fileinfo(tci_cut[-1])
+        filename = basefilename + filename
+        self.folderEdit.setText(folder)    
+        self.filenameEdit.setText(filename)
 
-        if(len(tci_cut)>0):
-            folder = tci_cut[-1]['project'] + '\\'+ tci_cut[0]['subfolder']
-            self.folderEdit.setText(folder)
-            filename = self.origfilename + '_' + tci_cut[-1]['filename'] + '_'+ tci_cut[-1]['measurementnumber'] + '_cut'
-            self.filenameEdit.setText(filename)
-
+    def get_fileinfo(self,tci_event):
+            folder = tci_event['project'] + '\\'+ tci_event['subfolder']
+            filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
+            return folder, filename
+        
     def gettestcaseinfo(self, cut = False):
-        #pull the testcase info from the json file
+        #pull the testcase info from the json file, only those after time1 if cut is true
         tci = {}
         for event in self.jsonfile:
             if event['event']['type'] == 'TestCaseInfoChange':
@@ -219,16 +223,19 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #parse a file based on the seleted times, internal or external
         folder = self.folderEdit.text()
-        
         isinternalfile = not (self.combo_files.currentIndex())
 
         if(isinternalfile):
             fileinpath = self.logfilepath
-            filename = self.filenameEdit.text()
+            filename = self.filenameEdit.text() # having to have weird redundancies because of ability to edit filename
+            basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
         else:
             paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
             fileinpath = paths[0]
-            filename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            tci_cut = self.gettestcaseinfo(cut = True)
+            folder, filename = self.get_fileinfo(tci_cut[-1])
+            filename = basefilename + filename
         
         timetype = self.combo_times.currentIndex()
 
@@ -237,18 +244,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             fileoutpath =   fileoutpath + '.tdms'
             pp_function(fileinpath, fileoutpath, self.time1, self.time2)
         else:
-            tci = []
-            times = []
-            for event in self.jsonfile: #just do get_tci instead??
-                if event['event']['type'] == 'TestCaseInfoChange':
-                    time = datetime.datetime.utcfromtimestamp(event['dt'])
-                    time = time.replace(tzinfo=pytz.utc)
-                    times.append(time)
-                    tci.append(event['event']['event info'])
+            tci = self.gettestcaseinfo(cut = False)
             i=0
-            for i in range(len(times)-1):
-                folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
-                newfilename = filename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
+            for i in range(len(tci)-1):
+                times = list(tci.keys())
+                folder, filename = self.get_fileinfo(tci[times[i]])
+                newfilename = basefilename + filename
                 fileoutpath = os.path.join(self.datefolder, folder, newfilename)
                 fileoutpath =   fileoutpath + '.tdms'
                 pp_function(fileinpath, fileoutpath, times[i],times[i+1])

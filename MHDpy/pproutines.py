@@ -86,8 +86,7 @@ def cut_powermeter(fileinpath, fileoutpath, time1, time2):
 
             channels = tdmsfile.group_channels(group)
             for channel in channels:
-                if type(channel.data_type.size) == type(None): break
-                print(channel.data[idx1:idx2])
+                if type(channel.data_type.size) == type(None): break #skips over non numeric channels
                 props = channel.properties
                 channel_object = ChannelObject(group, channel.channel, channel.data[idx1:idx2], properties=props)
                 tdms_writer.write_segment([
