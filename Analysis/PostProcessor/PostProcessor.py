@@ -218,17 +218,18 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #parse a file based on the seleted times, internal or external
         folder = self.folderEdit.text()
-        filename = self.filenameEdit.text()
+        
 
         isinternalfile = not (self.combo_files.currentIndex())
 
         if(isinternalfile):
             fileinpath = self.logfilepath
+            filename = self.filenameEdit.text()
         else:
             paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
             fileinpath = paths[0]
-
-        origfilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            filename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+        
         timetype = self.combo_times.currentIndex()
 
         if timetype:
@@ -247,8 +248,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             i=0
             for i in range(len(times)-1):
                 folder = tci[i]['project'] + '\\'+ tci[i]['subfolder']
-                filename = origfilename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
-                fileoutpath = os.path.join(self.datefolder, folder, filename)
+                newfilename = filename + '_' + tci[i]['filename'] + '_'+ tci[i]['measurementnumber'] + '_cut'
+                fileoutpath = os.path.join(self.datefolder, folder, newfilename)
                 fileoutpath =   fileoutpath + '.tdms'
                 pp_function(fileinpath, fileoutpath, times[i],times[i+1])
 
@@ -478,7 +479,7 @@ ui.setupUi(MainWindow)
 ui.link_buttons()
 MainWindow.show()
 
-ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-17\\Logfiles\\Sensors_TC\\Log_Sensors_TC_0.tdms') #Windows
+ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-19\\Logfiles\\Sensors_TC\\Log_Sensors_TC_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 #ui.refresh()
