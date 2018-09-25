@@ -218,38 +218,49 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #parse a file based on the seleted times, internal or external
         folder = self.folderEdit.text()
+
+        #filename = self.filenameEdit.text() #Abandoned custom filename for now as it cases issues
+
         isinternalfile = not (self.combo_files.currentIndex())
 
+        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
+
+        #Get the list of files to parse
         if(isinternalfile):
-            fileinpath = self.logfilepath
-            filename = self.filenameEdit.text() # having to have weird redundancies because of ability to edit filename
-            basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            fileinpaths = [self.logfilepath]
         else:
-            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
-            fileinpath = paths[0]
-            basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data')
+
+        #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
+        timetype = self.combo_times.currentIndex()
+        fileoutpaths = []
+        times = []
+        if timetype: 
+            #Parse all files based on internal time (graph) 
             tci_cut = self.gettestcaseinfo(cut = True)
             folder, filename = self.gen_fileinfo(tci_cut[-1])
-            filename = basefilename + filename
-        
-        timetype = self.combo_times.currentIndex()
-
-        if timetype:
-            fileoutpath = os.path.join(self.datefolder, folder, filename) 
-            fileoutpath =   fileoutpath + '.tdms'
-            kwargs = {'fileinpath':fileinpath, 'fileoutpath':fileoutpath, 'time1':self.time1,'time2':self.time2}
-            pp_function(**kwargs)
-        else:
+            for fileinpath in fileinpaths:
+                basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+                fileoutpaths.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
+                times.append([ (self.time1,self.time2) ])
+        else: 
+            #Parse each file based on event log
             tci = self.gettestcaseinfo(cut = False)
-            i=0
-            for i in range(len(tci)-1):
-                times = list(tci.keys())
-                folder, filename = self.gen_fileinfo(tci[times[i]])
-                newfilename = basefilename + filename
-                fileoutpath = os.path.join(self.datefolder, folder, newfilename)
-                fileoutpath =   fileoutpath + '.tdms'
-                kwargs = {'fileinpath':fileinpath, 'fileoutpath':fileoutpath, 'time1':times[i], 'time2':times[i+1]}
-                pp_function(**kwargs)
+            timelist = list(tci.keys())
+            for fileinpath in fileinpaths:
+                basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+                times_onefile = []
+                fileoutpath_onefile = []
+                for i in range(len(tci)-1):
+                    times_onefile.append((timelist[i],timelist[i+1]))
+                    folder, filename = self.gen_fileinfo(tci[timelist[i]])
+                    fileoutpath_onefile.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
+                fileoutpaths.append(fileoutpath_onefile)
+                times.append(times_onefile)
+    
+            
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'fileoutpaths':fileoutpaths, 'times': times}
+        pp_function(**kwargs)
 
 
 app = QtWidgets.QApplication(sys.argv)

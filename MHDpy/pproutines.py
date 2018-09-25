@@ -20,8 +20,20 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 
 import MHDpy.various as various
+from PyQt5 import QtCore, QtWidgets, QtGui
+
+### High level post processing (processes multiple types of files in a predefined way)
+def parse_lasertiming(MainWindow, ui, **kwargs):
+    #QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open Files', 'C:\\Labview Test Data')
+    print(ui.logfilepath)
+
+def test(fileinpaths, fileoutpaths, times, **kwargs):
+    print(fileinpaths)
+    print(fileoutpaths)
+    print(times)
 
 
+# Mid level post processing (processes a specific type of file)
 def cut_log_file(fileinpath, fileoutpath, time1, time2, **kwargs):
     tdmsfile = TF(fileinpath)
 
@@ -68,8 +80,7 @@ def cut_powermeter(fileinpath, fileoutpath, time1, time2, **kwargs):
         print('removing the file at: \n', fileoutpath)
         os.remove(fileoutpath)
 
-def hello(**kwargs):
-    print('hello')
+#Low level post processing (Functions inside a file)
 
 def _cut_channel(channel,time1,time2, timedata = None):
 
