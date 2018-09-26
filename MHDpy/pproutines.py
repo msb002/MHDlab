@@ -27,58 +27,73 @@ def parse_lasertiming(MainWindow, ui, **kwargs):
     #QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open Files', 'C:\\Labview Test Data')
     print(ui.logfilepath)
 
-def test(fileinpaths, fileoutpaths, times, **kwargs):
+def test(fileinpaths, times, fileoutpaths_list, **kwargs):
     print(fileinpaths)
-    print(fileoutpaths)
+    print(fileoutpaths_list)
     print(times)
 
 
 # Mid level post processing (processes a specific type of file)
-def cut_log_file(fileinpath, fileoutpath, time1, time2, **kwargs):
-    tdmsfile = TF(fileinpath)
+def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
+    for i in range(len(fileinpaths)):
+        fileinpath = fileinpaths[i]
+        fileoutpaths = fileoutpaths_list[i]
+        tdmsfile = TF(fileinpath)
+        for j in range(len(times)):
+            time1 = times[j][0]
+            time2 = times[j][1]
+            fileoutpath = fileoutpaths[j]
+            
+            direc = os.path.split(fileoutpath)[0]
+            if not os.path.exists(direc):
+                os.makedirs(direc)
 
-    direc = os.path.split(fileoutpath)[0]
-    if not os.path.exists(direc):
-        os.makedirs(direc)
+            root_object = RootObject(properties={ #TODO root properties
+            })
 
-    root_object = RootObject(properties={ #TODO root properties
-    })
+            try:
+                with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
+                    for group in tdmsfile.groups():
+                        for channel in tdmsfile.group_channels(group):
+                            channel_object = _cut_channel(channel,time1,time2, timedata = None)
+                            tdms_writer.write_segment([
+                                root_object,
+                                channel_object])
+            except ValueError as error:
+                print(error)
+                print('removing the file at: \n', fileoutpath)
+                os.remove(fileoutpath)
 
-    try:
-        with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
-            for group in tdmsfile.groups():
-                for channel in tdmsfile.group_channels(group):
-                    channel_object = _cut_channel(channel,time1,time2, timedata = None)
-                    tdms_writer.write_segment([
-                        root_object,
-                        channel_object])
-    except ValueError as error:
-        print(error)
-        print('removing the file at: \n', fileoutpath)
-        os.remove(fileoutpath)
+def cut_powermeter(fileinpaths, times, fileoutpaths_list, **kwargs):
+    for i in range(len(fileinpaths)):
+        fileinpath = fileinpaths[i]
+        fileoutpaths = fileoutpaths_list[i]
+        tdmsfile = TF(fileinpath)
+        for j in range(len(times)):
+            time1 = times[j][0]
+            time2 = times[j][1]
+            fileoutpath = fileoutpaths[j]
 
-def cut_powermeter(fileinpath, fileoutpath, time1, time2, **kwargs):
-    tdmsfile = TF(fileinpath)
-    direc = os.path.split(fileoutpath)[0]
-    if not os.path.exists(direc):
-        os.makedirs(direc)
+            direc = os.path.split(fileoutpath)[0]
+            if not os.path.exists(direc):
+                os.makedirs(direc)
 
-    root_object = RootObject(properties={ #TODO root properties
-    })
-    try:
-        with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
-            for group in tdmsfile.groups():
-                timedata = tdmsfile.channel_data(group,'Time_LV')
-                for channel in tdmsfile.group_channels(group):
-                    if type(channel.data_type.size) == type(None): break #skips over non numeric channels
-                    channel_object = _cut_channel(channel,time1,time2, timedata = timedata)
-                    tdms_writer.write_segment([
-                        root_object,
-                        channel_object])
-    except ValueError as error:
-        print(error)
-        print('removing the file at: \n', fileoutpath)
-        os.remove(fileoutpath)
+            root_object = RootObject(properties={ #TODO root properties
+            })
+            try:
+                with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
+                    for group in tdmsfile.groups():
+                        timedata = tdmsfile.channel_data(group,'Time_LV')
+                        for channel in tdmsfile.group_channels(group):
+                            if type(channel.data_type.size) == type(None): break #skips over non numeric channels
+                            channel_object = _cut_channel(channel,time1,time2, timedata = timedata)
+                            tdms_writer.write_segment([
+                                root_object,
+                                channel_object])
+            except ValueError as error:
+                print(error)
+                print('removing the file at: \n', fileoutpath)
+                os.remove(fileoutpath)
 
 #Low level post processing (Functions inside a file)
 

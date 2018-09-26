@@ -233,36 +233,34 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
         timetype = self.combo_times.currentIndex()
-        fileoutpaths = []
+        fileoutpaths_list = []
         times = []
         if timetype: 
             #Parse all files based on internal time (graph) 
             tci_cut = self.gettestcaseinfo(cut = True)
             folder, filename = self.gen_fileinfo(tci_cut[-1])
+            times = [(self.time1,self.time2)]
             for fileinpath in fileinpaths:
-                print(fileinpaths)
-                print(fileinpath)
-                print(os.path.split(fileinpath))
                 basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
-                fileoutpaths.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
-                times.append([ (self.time1,self.time2) ])
+                fileoutpaths_list.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
+                
         else: 
             #Parse each file based on event log
             tci = self.gettestcaseinfo(cut = False)
             timelist = list(tci.keys())
+            for i in range(len(tci)-1):
+                times.append((timelist[i],timelist[i+1]))
             for fileinpath in fileinpaths:
                 basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
-                times_onefile = []
-                fileoutpath_onefile = []
+                fileoutpaths= []
                 for i in range(len(tci)-1):
-                    times_onefile.append((timelist[i],timelist[i+1]))
                     folder, filename = self.gen_fileinfo(tci[timelist[i]])
-                    fileoutpath_onefile.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
-                fileoutpaths.append(fileoutpath_onefile)
-                times.append(times_onefile)
+                    fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
+                fileoutpaths_list.append(fileoutpaths)
+                
     
             
-        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'fileoutpaths':fileoutpaths, 'times': times}
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
         pp_function(**kwargs)
 
 
