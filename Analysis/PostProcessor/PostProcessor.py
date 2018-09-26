@@ -229,7 +229,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(isinternalfile):
             fileinpaths = [self.logfilepath]
         else:
-            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data')
+            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data', 'All Files (*)')[0]
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
         timetype = self.combo_times.currentIndex()
@@ -240,6 +240,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             tci_cut = self.gettestcaseinfo(cut = True)
             folder, filename = self.gen_fileinfo(tci_cut[-1])
             for fileinpath in fileinpaths:
+                print(fileinpaths)
+                print(fileinpath)
+                print(os.path.split(fileinpath))
                 basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
                 fileoutpaths.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
                 times.append([ (self.time1,self.time2) ])
