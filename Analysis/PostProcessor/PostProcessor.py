@@ -181,7 +181,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.textBrowser.setText(string)
 
-        tci_cut = self.gettestcaseinfo(cut = True)
+        tci_cut = self.geteventinfo('TestCaseInfoChange',cut = True)
         basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
         folder, filename = self.gen_fileinfo(tci_cut[-1])
         filename = basefilename + filename
@@ -193,11 +193,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
             return folder, filename
         
-    def gettestcaseinfo(self, cut = False):
+    def geteventinfo(self,eventstr, cut = False):
         #pull the testcase info from the json file, only those after time1 if cut is true
         tci = {}
         for event in self.jsonfile:
-            if event['event']['type'] == 'TestCaseInfoChange':
+            if event['event']['type'] == eventstr:
                 time = datetime.datetime.utcfromtimestamp(event['dt'])
                 time = time.replace(tzinfo=pytz.utc)
                 tci[time] = event['event']['event info']
@@ -247,13 +247,23 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             times = [(self.time1,self.time2)]
         elif timetype == 1: 
             #Parse each file based on event log
-            tci = self.gettestcaseinfo(cut = False)
+            tci = self.geteventinfo('TestCaseInfoChange',cut = False)
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
         elif timetype == 2:
-            #PIMax save events
-            pass
+            saveevents = self.geteventinfo('VISavingChange',cut = False)
+            camsaveevents = []
+            timeslist = []
+            for time, saveevent in saveevents.items():
+                if saveevent['name'] == "PIMAX-Cam1":
+                    camsaveevents.append(saveevent)
+                    timeslist.append(time)
+            for i in range(len(camsaveevents)-1):
+                event1 = camsaveevents[i]
+                event2 = camsaveevents[i+1]
+                if(event1['newstate'] == True and event2['newstate'] == False):
+                    times.append((timeslist[i],timeslist[i+1]))
 
         return times
 
@@ -271,7 +281,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return fileoutpaths_list
     
     def event_before(self,time_cut):
-        tci = self.gettestcaseinfo(cut = False)
+        tci = self.geteventinfo('TestCaseInfoChange',cut = False)
         tci_cut = []
         for time, event in tci.items():
             if(time<=time_cut): 
