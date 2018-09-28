@@ -20,18 +20,20 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 
 import MHDpy.various as various
+import MHDpy.SPEparse
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 ### High level post processing (processes multiple types of files in a predefined way)
-def parse_lasertiming(MainWindow, ui, **kwargs):
-    #QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open Files', 'C:\\Labview Test Data')
-    print(ui.logfilepath)
+def parse_lasertiming(fileinpaths, **kwargs):
+    intensities, timestamps = MHDpy.SPEparse.parse_lasertiming(fileinpaths)
+    folder = os.path.split(fileinpaths[0])[0]
+    fileoutpath = os.path.join(folder, 'PIMax_Timing_Parsed.tdms')
 
-def test(fileinpaths, times, fileoutpaths_list, **kwargs):
-    print(fileinpaths)
-    print(fileoutpaths_list)
-    print(times)
+    root_object = RootObject(properties={})
 
+    with TdmsWriter(fileoutpath,mode = 'w') as tdms_writer:
+        _write_dataframe(tdms_writer, intensities ,"MaxIntensities")
+        _write_dataframe(tdms_writer, timestamps ,"Timestamps")
 
 # Mid level post processing (processes a specific type of file)
 def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
@@ -117,8 +119,7 @@ def _cut_channel(channel,time1,time2, timedata = None):
         props['wf_start_time'] = start + offset
 
     return ChannelObject(channel.group, channel.channel, channel.data[idx1:idx2], properties=props)
-
-
+    
 def _get_indextime(timedata, time1,time2):
     if(time2 > time1):
         idx1 = various.nearest_timeind(timedata,time1)
@@ -129,5 +130,14 @@ def _get_indextime(timedata, time1,time2):
 
     return idx1,idx2
 
+def _write_dataframe(tdms_writer, dataframe, name):
+
+    root_object = RootObject(properties={ })
+    i=0
+    for column in dataframe.iteritems():
+        column = column[1].as_matrix()
+        channel_object = ChannelObject(name, name + "_" + str(i) , column)
+        tdms_writer.write_segment([root_object,channel_object])
+        i=i+1
 if __name__ == '__main__':
     pass

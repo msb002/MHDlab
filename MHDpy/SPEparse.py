@@ -39,6 +39,7 @@ def get_starttimes(spe_file):
     starttimestamps = starttimestamps/res
     starttimedeltas = list(map(lambda x:datetime.timedelta(seconds = x),starttimestamps))
     starttimes = [abstime + starttime for starttime in starttimedeltas] 
+    starttimes = [time.timestamp() for time in starttimes]
     return starttimes
 
 
@@ -53,7 +54,6 @@ def SPE2df_seq_spect(spefilepath):
 
     frames  = spe_file.data
     gatedelays = get_gatedelays(spe_file)
-    timestamps = get_starttimes(spe_file)
     wavelength = spe_file.wavelength
     
     datamatrix = np.zeros((len(wavelength),len(gatedelays)))
@@ -234,30 +234,32 @@ class PLplot_new():
         
         # Make the y-axis label, ticks and tick labels match the line color.
 
-def parse_lasertiming(folderpath):
-    filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
-    filenames = [f for f in filenames if os.path.splitext(os.path.join(folderpath,f))[1] == '.spe']
+def parse_lasertiming(filepaths):
+    #folderpath = os.path.split(filepaths[0])
+    #filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
+    #filenames = [os.path.split(filepath) for filepath in filepaths if os.path.splitext(filepaths)[1] == '.spe']
 
-    spe_file = sl.load_from_files([os.path.join(folderpath,filenames[0])])
-    gatedelays = get_gatedelays(spe_file)
-    
-    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
-    timestamps = pd.DataFrame(index = gatedelays, columns = range(len(filenames)))
-    i=0
-    for filename in filenames:
-        spe_file = sl.load_from_files([os.path.join(folderpath,filename)])
+    spe_files = sl.load_from_files(filepaths)
+    if type(spe_files) != type(list()):
+        spe_files = [spe_files]
+    gatedelays = get_gatedelays(spe_files[0])
+    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
+    timestamps = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
+    i=0    
+    for spe_file in spe_files:
         frames  = spe_file.data
         intensity = list(map(lambda x: x[0].max(), frames))
         try:
             intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
-            timestamps.iloc[:,i] = pd.Series(get_starttimes, index = timestamps.index)
+            timestamps.iloc[:,i] = pd.Series(get_starttimes(spe_file), index = timestamps.index)
             i=i+1
         except ValueError: #comes up if there is an incomplete file. 
-            print(filename, ' did not have correct number of data points')
+            print(spe_file, ' did not have correct number of data points')
     intensities = intensities.truncate(after = i, axis = 'columns')
+    return intensities, timestamps
 
 
-parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')
+#parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')
 
 
 #TRPL lifetime pseudo code

@@ -243,7 +243,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             for fileinpath in fileinpaths:
                 basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
                 fileoutpaths_list.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
-                
         else: 
             #Parse each file based on event log
             tci = self.gettestcaseinfo(cut = False)
@@ -253,12 +252,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             for fileinpath in fileinpaths:
                 basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
                 fileoutpaths= []
-                for i in range(len(tci)-1):
+                for i in range(len(tci)-1): 
                     folder, filename = self.gen_fileinfo(tci[timelist[i]])
                     fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
                 fileoutpaths_list.append(fileoutpaths)
-                
-    
+
             
         kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
         pp_function(**kwargs)
