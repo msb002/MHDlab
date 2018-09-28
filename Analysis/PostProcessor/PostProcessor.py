@@ -232,6 +232,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data', 'All Files (*)')[0]
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
+        
+        times, fileoutpaths_list = self.gen_fileout(fileinpaths)
+            
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+        pp_function(**kwargs)
+
+    def gen_fileout(self, fileinpaths):
         timetype = self.combo_times.currentIndex()
         fileoutpaths_list = []
         times = []
@@ -257,10 +264,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                     fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
                 fileoutpaths_list.append(fileoutpaths)
 
-            
-        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
-        pp_function(**kwargs)
-
+        return times, fileoutpaths_list
 
 app = QtWidgets.QApplication(sys.argv)
 
