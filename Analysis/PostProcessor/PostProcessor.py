@@ -232,39 +232,52 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data', 'All Files (*)')[0]
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
-        
-        times, fileoutpaths_list = self.gen_fileout(fileinpaths)
+        times = self.gen_times()
+        fileoutpaths_list = self.gen_fileout(fileinpaths,times)
             
         kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
         pp_function(**kwargs)
 
-    def gen_fileout(self, fileinpaths):
+    def gen_times(self):
         timetype = self.combo_times.currentIndex()
-        fileoutpaths_list = []
+        
         times = []
-        if timetype: 
+        if timetype == 0: 
             #Parse all files based on internal time (graph) 
-            tci_cut = self.gettestcaseinfo(cut = True)
-            folder, filename = self.gen_fileinfo(tci_cut[-1])
             times = [(self.time1,self.time2)]
-            for fileinpath in fileinpaths:
-                basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
-                fileoutpaths_list.append([os.path.join(self.datefolder, folder,basefilename+ filename) + '.tdms'])
-        else: 
+        elif timetype == 1: 
             #Parse each file based on event log
             tci = self.gettestcaseinfo(cut = False)
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
-            for fileinpath in fileinpaths:
-                basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
-                fileoutpaths= []
-                for i in range(len(tci)-1): 
-                    folder, filename = self.gen_fileinfo(tci[timelist[i]])
-                    fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
-                fileoutpaths_list.append(fileoutpaths)
+        elif timetype == 2:
+            #PIMax save events
+            pass
 
-        return times, fileoutpaths_list
+        return times
+
+    def gen_fileout(self,fileinpaths,times):
+        fileoutpaths_list = []
+        
+        for fileinpath in fileinpaths:
+            basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
+            fileoutpaths= []
+            for timepair in times:
+                folder, filename = self.gen_fileinfo(self.event_before(timepair[0]))
+                fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
+            fileoutpaths_list.append(fileoutpaths)
+
+        return fileoutpaths_list
+    
+    def event_before(self,time_cut):
+        tci = self.gettestcaseinfo(cut = False)
+        tci_cut = []
+        for time, event in tci.items():
+            if(time<=time_cut): 
+                tci_cut.append(event)
+        return tci_cut[-1]
+        
 
 app = QtWidgets.QApplication(sys.argv)
 
