@@ -27,7 +27,11 @@ def labview_to_unix(timestamps):
     newtimestamps = list(map(lambda x: x -2082844800 ,timestamps))
     return newtimestamps
 
-def nearest_timeind(timearray, pivot):
-    diffs =   np.array(list(map(lambda x: abs(x - pivot),timearray))) 
-    seconds = np.array(list(map(lambda x: x.total_seconds(),diffs)))
+def nearest_timeind(timearray, pivot, dtype = 'datetime'):
+    if(dtype == 'datetime'):
+        seconds = np.array(list(map(lambda x: abs(x - pivot).total_seconds(),timearray))) 
+        print(seconds)
+    else:
+        seconds = abs(timearray - pivot)
+        print(seconds)
     return seconds.argmin()
