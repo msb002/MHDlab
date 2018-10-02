@@ -106,9 +106,7 @@ def _cut_channel(channel,time1,time2, timedata = None):
         timedata = channel.time_track(absolute_time = True)
         time1 = np.datetime64(time1)
         time2 = np.datetime64(time2)
-        #print(time1)
-        #print(timedata)
-        idx1, idx2 =  _get_indextime(timedata, time1,time2, dtype = 'np64')
+        idx1, idx2 =  _get_indextime(timedata, time1,time2, dtype = 'npdt64')
         waveform = True
     else:
         idx1, idx2 =  _get_indextime(timedata, time1,time2)
@@ -144,12 +142,16 @@ def _write_dataframe(tdms_writer, dataframe, name):
         tdms_writer.write_segment([root_object,channel_object])
         i=i+1
 if __name__ == '__main__':
-    fileinpaths = ['C:/Labview Test Data/2018-09-19/Logfiles/Sensors_DAQ/Log_Sensors_DAQ_0.tdms']
+    
     time1 = datetime.datetime(2018, 9, 19, 21, 21,tzinfo = pytz.utc)
     #time1 = time1.replace(tzinfo = None).astimezone(pytz.utc)
     time2 = datetime.datetime(2018, 9, 19, 21, 32, 16,tzinfo = pytz.utc)
     #time2 = time2.replace(tzinfo = None).astimezone(pytz.utc)
     times = [(time1 ,time2 )]
-    fileoutpaths_list = [['C:\\Labview Test Data\\2018-09-19\\UnspecifiedProj\\Temp Dependence\\Log_Sensors_DAQ_0_400C_0.tdms']]
-    cut_log_file(fileinpaths, times, fileoutpaths_list)
+    # fileinpaths = ['C:/Labview Test Data/2018-09-19/Logfiles/Sensors_DAQ/Log_Sensors_DAQ_0.tdms']
+    # fileoutpaths_list = [['C:\\Labview Test Data\\2018-09-19\\UnspecifiedProj\\Temp Dependence\\Log_Sensors_DAQ_0_400C_0.tdms']]
+    # cut_log_file(fileinpaths, times, fileoutpaths_list)
+    fileinpaths = ['C:/Labview Test Data/2018-09-19/Logfiles/Powermeter/Log_Powermeter_0.tdms']
+    fileoutpaths_list = [['C:\\Labview Test Data\\2018-09-19\\UnspecifiedProj\\Temp Dependence\\Log_Powermeter_0_400C_0.tdms']]
+    cut_powermeter(fileinpaths, times, fileoutpaths_list)
     pass

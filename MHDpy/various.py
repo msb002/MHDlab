@@ -31,7 +31,7 @@ def nearest_timeind(timearray, pivot, dtype = 'datetime'):
     if(dtype == 'datetime'):
         seconds = np.array(list(map(lambda x: abs(x - pivot).total_seconds(),timearray))) 
         print(seconds)
-    else:
+    elif(dtype == 'npdt64'):
         seconds = abs(timearray - pivot)
         print(seconds)
     return seconds.argmin()
