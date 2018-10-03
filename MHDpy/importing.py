@@ -1,4 +1,7 @@
-
+# -*- coding: utf-8 -*-
+"""
+Functions for importing files into python sessions for data analysis.
+"""
 from nptdms import TdmsFile as TF
 import numpy as np
 import os

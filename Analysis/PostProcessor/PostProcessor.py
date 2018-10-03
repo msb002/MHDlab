@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-This program pulls data from the logging files to copy the 'control VI' files
+A post processing GUI function for parsing log files.
+
+In general this Gui is used to call post processing functions from MHDpy.pproutines. Some post processing functions want informaiton like a list of input files and times to parse those files by, and this GUI facilitates gathering that information. Use the vertical bars on the graph to select the desired parsing times, or select a time selection function to get a list of times (from the event log for instance).
 """
 
 from __future__ import unicode_literals
@@ -18,7 +20,7 @@ import json
 import scipy.stats as stats
 
 import MHDpy.pproutines as pproutines
-import MHDpy.various as various
+import MHDpy.timefuncs as timefuncs
 
 import layout
 import random
@@ -106,12 +108,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         #update_time_displays : updates the time inputs to max and min of channel
         self.timearray = channels[0].time_track(absolute_time = True)
-        self.timedata = list(map(lambda x: various.np64_to_utc(x),self.timearray))
+        self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
 
         startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(various.np64_to_unix(self.timearray[0]))
+        startdatetime.setTime_t(timefuncs.np64_to_unix(self.timearray[0]))
         enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(various.np64_to_unix(self.timearray[-1]))
+        enddatetime.setTime_t(timefuncs.np64_to_unix(self.timearray[-1]))
 
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
@@ -147,8 +149,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def update_stats(self,channel):
         #update the statistics calculations and display
-        idx1 = various.nearest_timeind(self.timedata,self.time1)
-        idx2 = various.nearest_timeind(self.timedata,self.time2)
+        idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
+        idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
         if len(channel.data[idx1:idx2]) > 0:
             self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
             self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))

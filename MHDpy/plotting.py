@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May  2 04:34:21 2018
-
-@author: aspit
+Various plot classes and functions for making plots during data analysis.
 """
 
 import matplotlib.pyplot as plt

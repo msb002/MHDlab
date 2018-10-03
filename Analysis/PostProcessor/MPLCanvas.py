@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This program pulls data from the logging files to copy the 'control VI' files
+PyQt 5 matplotlib canvas ojbect for plotting of data in the post processor GUI.
 """
 
 from __future__ import unicode_literals
@@ -21,7 +21,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-import MHDpy.various as various
+import MHDpy.timefuncs as timefuncs
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
@@ -93,7 +93,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                     self.annot.set_visible(False)
                     time = tick.get_xdata()
                     datetime = QtCore.QDateTime()
-                    datetime.setTime_t(various.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
+                    datetime.setTime_t(timefuncs.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
                     if(self.lastselectedline == self.timeline1):
                         self.mainwindow.startTimeInput.setDateTime(datetime)
@@ -150,7 +150,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         #updates the figure with a new channel. 
 
         timearray = channel.time_track(absolute_time = True)
-        timearray = list(map(lambda x: various.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        timearray = list(map(lambda x: timefuncs.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
         data = channel.data
 
         if self.dataline in self.axes.lines:

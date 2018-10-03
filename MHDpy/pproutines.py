@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This program pulls data from the logging files to copy the 'control VI' files
+Post Processing routines that parse log files.
 """
 
 from __future__ import unicode_literals
@@ -19,12 +19,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
-import MHDpy.various as various
+import MHDpy.timefuncs as timefuncs
 import MHDpy.SPEparse
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 ### High level post processing (processes multiple types of files in a predefined way)
 def parse_lasertiming(fileinpaths, **kwargs):
+    """Takes in a series of SPE sequential images and outputs a tdms file of the maximum of each image."""
     intensities, timestamps = MHDpy.SPEparse.parse_lasertiming(fileinpaths)
     folder = os.path.split(fileinpaths[0])[0]
     fileoutpath = os.path.join(folder, 'PIMax_Timing_Parsed.tdms')
@@ -37,6 +38,11 @@ def parse_lasertiming(fileinpaths, **kwargs):
 
 # Mid level post processing (processes a specific type of file)
 def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
+    """
+    Cuts up a log file based on the supplied times.
+    
+    This function assumes that the channels are waveforms.
+    """
     for i in range(len(fileinpaths)):
         fileinpath = fileinpaths[i]
         fileoutpaths = fileoutpaths_list[i]
@@ -67,6 +73,7 @@ def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
                 os.remove(fileoutpath)
 
 def cut_powermeter(fileinpaths, times, fileoutpaths_list, **kwargs):
+    """Cut up a power meter tdms file based on input times."""
     for i in range(len(fileinpaths)):
         fileinpath = fileinpaths[i]
         fileoutpaths = fileoutpaths_list[i]
@@ -100,14 +107,16 @@ def cut_powermeter(fileinpaths, times, fileoutpaths_list, **kwargs):
 #Low level post processing (Functions inside a file)
 
 def _cut_channel(channel,time1,time2, timedata = None):
-
+    """
+    Cut an individual channel based on input times.
+    
+    If no time data is passed the channel is assumed to be a waveform and time_track is used to get a numpy array of the times
+    """
     waveform = False
     if(timedata == None): #if no timedata is passed, assume channel is a waveform
         timedata = channel.time_track(absolute_time = True)
         time1 = np.datetime64(time1)
         time2 = np.datetime64(time2)
-        #print(time1)
-        #print(timedata)
         idx1, idx2 =  _get_indextime(timedata, time1,time2, dtype = 'np64')
         waveform = True
     else:
@@ -125,17 +134,18 @@ def _cut_channel(channel,time1,time2, timedata = None):
     return ChannelObject(channel.group, channel.channel, channel.data[idx1:idx2], properties=props)
     
 def _get_indextime(timedata, time1,time2,dtype = 'datetime'):
+    """Get the nearest indicies of two times in a time array, maintaining time order."""
     if(time2 > time1):
-        idx1 = various.nearest_timeind(timedata,time1,dtype)
-        idx2 = various.nearest_timeind(timedata,time2,dtype)
+        idx1 = timefuncs.nearest_timeind(timedata,time1,dtype)
+        idx2 = timefuncs.nearest_timeind(timedata,time2,dtype)
     else:
-        idx2 = various.nearest_timeind(timedata,time1,dtype)
-        idx1 = various.nearest_timeind(timedata,time2,dtype)
+        idx2 = timefuncs.nearest_timeind(timedata,time1,dtype)
+        idx1 = timefuncs.nearest_timeind(timedata,time2,dtype)
 
     return idx1,idx2    
 
 def _write_dataframe(tdms_writer, dataframe, name):
-
+    """Write a dataframe to a tdms group."""
     root_object = RootObject(properties={ })
     i=0
     for column in dataframe.iteritems():
@@ -143,6 +153,7 @@ def _write_dataframe(tdms_writer, dataframe, name):
         channel_object = ChannelObject(name, name + "_" + str(i) , column)
         tdms_writer.write_segment([root_object,channel_object])
         i=i+1
+        
 if __name__ == '__main__':
     fileinpaths = ['C:/Labview Test Data/2018-09-19/Logfiles/Sensors_DAQ/Log_Sensors_DAQ_0.tdms']
     time1 = datetime.datetime(2018, 9, 19, 21, 21,tzinfo = pytz.utc)

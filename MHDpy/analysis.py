@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun May 20 11:52:12 2018
-
-@author: aspit
+Functions for use in Data Analysis
 """
 import numpy as np
 
