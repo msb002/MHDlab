@@ -1,6 +1,6 @@
-python MHDpy\setup_pythonpath.py
+python setup.py develop
 
-pip install -r requirements.txt
+python setup.py clean
 
 start "" "Common SubVis\Setup_GlobalVariable.vi"
 
