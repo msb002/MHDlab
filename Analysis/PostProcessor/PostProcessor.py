@@ -41,6 +41,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def __init__(self):
         self.channel = None # replace in __init__
         self.eventlog = None
+        self.Logfiletdms = None
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
@@ -93,7 +94,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(filepath == ''):
             pass
         else:
-            
             
             self.Logfiletdms = TF(filepath)
             self.logfilepath = filepath
@@ -263,8 +263,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data', 'All Files (*)')[0]
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
-        times = self.gen_times()
-        fileoutpaths_list = self.gen_fileout(fileinpaths,times)
+        if self.Logfiletdms == None:
+            times = None
+            fileoutpaths_list = None
+        else:
+            times = self.gen_times()
+            fileoutpaths_list = self.gen_fileout(fileinpaths,times)
             
         kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
         pp_function(**kwargs)
