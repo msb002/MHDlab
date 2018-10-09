@@ -104,6 +104,24 @@ def cut_powermeter(fileinpaths, times, fileoutpaths_list, **kwargs):
                 print('removing the file at: \n', fileoutpath)
                 os.remove(fileoutpath)
 
+
+def join_tdms(fileinpaths, **kwargs):
+    """join two tdms files, not working currently. Just use TDMS combine labview VI"""
+    #folder,filename1 = os.path.split(fileinpaths[0])
+    #fileoutname = os.path.splitext(filename1)[0] + '_join.tmds'
+    # joined = pd.DataFrame()
+    # for i in range(len(fileinpaths)):
+    #     fileinpath = fileinpaths[i]
+    #     tdmsfile = TF(fileinpath)
+    #     df = tdmsfile.as_dataframe()
+    #     print(df.columns)
+    #     if joined.empty:
+    #         joined = df
+    #     else:
+    #         joined = joined.append(df)
+    pass
+
+
 #Low level post processing (Functions inside a file)
 
 def _cut_channel(channel,time1,time2, timedata = None):
@@ -155,12 +173,15 @@ def _write_dataframe(tdms_writer, dataframe, name):
         i=i+1
         
 if __name__ == '__main__':
-    fileinpaths = ['C:/Labview Test Data/2018-09-19/Logfiles/Sensors_DAQ/Log_Sensors_DAQ_0.tdms']
+    folder = "C:/Users/aspit/OneDrive/Data/2018-10-05/Logfiles/Powermeter"
+    fileinpaths = [os.path.join(folder, "Log_Powermeter_5.tdms"),os.path.join(folder, "Log_Powermeter_6.tdms")]
+
     time1 = datetime.datetime(2018, 9, 19, 21, 21,tzinfo = pytz.utc)
     #time1 = time1.replace(tzinfo = None).astimezone(pytz.utc)
     time2 = datetime.datetime(2018, 9, 19, 21, 32, 16,tzinfo = pytz.utc)
     #time2 = time2.replace(tzinfo = None).astimezone(pytz.utc)
     times = [(time1 ,time2 )]
     fileoutpaths_list = [['C:\\Labview Test Data\\2018-09-19\\UnspecifiedProj\\Temp Dependence\\Log_Sensors_DAQ_0_400C_0.tdms']]
-    cut_log_file(fileinpaths, times, fileoutpaths_list)
+    #cut_log_file(fileinpaths, times, fileoutpaths_list)
+    join_tdms(fileinpaths)
     pass
