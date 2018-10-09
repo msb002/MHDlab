@@ -48,7 +48,7 @@ def get_starttimes(spe_file):
 
 
 
-def SPE2df_seq_spect(spefilepath):
+def SPE2df_spect(spefilepath, gatingtype = 'rep'):
     #convert a sequential spectral SPE file to a pandas dataframe with one axis wl and other axis gate delay.
     spe_file = sl.load_from_files([spefilepath])
 
@@ -62,8 +62,10 @@ def SPE2df_seq_spect(spefilepath):
     for frame in frames:
         datamatrix[:,i] = frame[0]
         i = i+1
-        
-    spectraldf = pd.DataFrame(datamatrix, index = wavelength, columns = gatedelays)    
+    if gatingtype == 'rep':
+        spectraldf = pd.DataFrame(datamatrix, index = wavelength)
+    elif gatingtype == 'seq':
+        spectraldf = pd.DataFrame(datamatrix, index = wavelength, columns = gatedelays)
     
     return spectraldf
         
@@ -125,7 +127,7 @@ def write_spectra(tdmsfilepath, root_object, frames, wavelength ):
             framenum = framenum +1
 
 
-def cutSpectraldf(spectraldf, wl1 = None,wl2 = None):
+def cutspectraldf(spectraldf, wl1 = None,wl2 = None):
     #cut up a spectral dataframe between two wavelenghts.
     wavelength = spectraldf.index
     if wl1 == None:
@@ -180,9 +182,9 @@ def fitdecay(spectraldf, wl1 = None, wl2 = None, wl1_fit = None, wl2_fit = None)
 
 class SpectraPlot():
     #plot of a simple intensity vs wavelength spectra
-    def __init__(self,spectra,wavelength):
+    def __init__(self,wavelength,spectra, label = None):
         self.fig, self.ax1 = plt.subplots(figsize = (8,6))
-        self.ax1.plot(wavelength,spectra)
+        self.ax1.plot(wavelength,spectra,label = label)
         self.ax1.set_xlabel("Wavelength (nm)")
         self.ax1.set_ylabel("Intensity (a.u.)")
 
