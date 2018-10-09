@@ -30,11 +30,33 @@ import inspect
 
 from MPLCanvas import MyDynamicMplCanvas
 
+import traceback
+
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
 
+progfolder = os.path.dirname(sys.argv[0])
 
 class Ui_MainWindow(layout.Ui_MainWindow):
+    def __init__(self):
+        self.channel = None # replace in __init__
+        self.eventlog = None
+
+        self.settingspath = os.path.join(progfolder, "ppsettings.json")
+        if not os.path.exists(self.settingspath):
+            print('hello')
+            with open(self.settingspath, 'w') as filewrite:
+                json.dump({},filewrite)
+        
+        with open(self.settingspath,'r') as fileread:
+            try:
+                self.ppsettings = json.load(fileread)
+            except json.decoder.JSONDecodeError:
+                print('Could not read settings')
+                self.ppsettings = {}
+                #json.dump({},fileread)
+    
+
     #The main window inherits from the MainWindow class within layout.py
     def link_buttons(self):
         #functions are tied to the widgets
@@ -54,16 +76,19 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
 
-        self.channel = None # replace in __init__
-        self.eventlog = None
-
         self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
         self.routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
         self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):
+        if 'defaultpath' in self.ppsettings:
+            dialogpath = self.ppsettings['defaultpath']
+        else:
+            dialogpath = 'C:\\Labview Test Data'
+
+
         if(filepath == 0):
-            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', 'C:\\Labview Test Data')
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', dialogpath)
             filepath = paths[0]
         if(filepath == ''):
             pass
@@ -73,6 +98,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.Logfiletdms = TF(filepath)
             self.logfilepath = filepath
             folder = os.path.split(filepath)[0]
+
+            with open(self.settingspath,'w') as writefile:
+                self.ppsettings['defaultpath'] = folder
+                json.dump(self.ppsettings,writefile )
 
             #search upward in file directory for eventlog.json, then set that as the date folder
             while(True):             
