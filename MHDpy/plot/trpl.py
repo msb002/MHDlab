@@ -1,12 +1,70 @@
 # -*- coding: utf-8 -*-
-"""
-Various plot classes and functions for making plots during data analysis.
-"""
 
 import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib as mpl
 from matplotlib import animation, rc
 from IPython.display import HTML
+
+
+mpl.rcParams.update({'font.size': 18})
+
+
+class SpectraPlot():
+    #plot of a simple intensity vs wavelength spectra
+    def __init__(self,wavelength,spectra, label = None):
+        self.fig, self.ax1 = plt.subplots(figsize = (8,6))
+        self.ax1.plot(wavelength,spectra,label = label)
+        self.ax1.set_xlabel("Wavelength (nm)")
+        self.ax1.set_ylabel("Intensity (a.u.)")
+
+    
+class PLplot_new():
+    #plot of a PL decay. First initializes the figure by adding a laser profile, then you call add_decay to add further PL decay plots
+    def __init__(self, laserseries):
+        self.fig, self.ax1 = plt.subplots(figsize = (8,6))
+        
+        self.ax1.set_xlabel("Gate Delay (ns)")
+        self.ax1.set_ylabel("$Delta$ PL Intensity (Normalized)")
+        self.ax1.tick_params('y')
+        self.ax1.set_yscale('log')
+        
+        self.ax2 = self.ax1.twinx()
+        self.ax2.set_ylabel("Laser Intensity (Normalized)")
+        self.ax2.tick_params('y')
+        self.ax2.set_yscale('log')
+        
+        self.lns = self.ax2.plot(laserseries.index, laserseries, '--', color = 'gray', label = 'Laser profile')
+        
+        self.setlegend()
+        self.fig.suptitle('PL Plot', y = 1)
+        self.fig.tight_layout()
+        
+    def add_decay(self,spectraldf, label,method = "max", wl1 = None ,wl2 = None, color = None):
+        spectra_cut = cutSpectraldf(spectraldf, wl1,wl2)
+        
+        areas, maximums = maxandarea(spectra_cut)
+        
+        if color == None:
+            colorlist = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+            color = colorlist[len(self.lns)]
+            
+        if method == "max":
+            ln = self.ax1.plot(spectra_cut.columns, maximums, '.-', color = color , label = label)    
+        elif method == "area":
+            ln = self.ax1.plot(spectra_cut.columns, areas, '.-', color = color , label = label)    
+        
+        self.lns = self.lns + ln
+        
+        self.legend.remove()
+        self.setlegend()       
+
+    def setlegend(self):
+        #iterate through lines and make a label
+        labs = [l.get_label() for l in self.lns]
+        self.legend = self.ax1.legend(self.lns, labs, loc=0)
+        
+        # Make the y-axis label, ticks and tick labels match the line color.
+
 
 
 class PLplot():
