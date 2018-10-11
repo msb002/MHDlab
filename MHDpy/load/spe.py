@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 import matplotlib as mpl
 import numpy as np
 from nptdms import TdmsFile as TF
@@ -10,8 +11,8 @@ from mhdpy.post.spe import _get_gatedelays
 
 mpl.rcParams.update({'font.size': 18})
 
-
-
+def hello():
+    print('hello')
 
 def SPE2df_spect(spefilepath, gatingtype = 'rep'):
     #convert a sequential spectral SPE file to a pandas dataframe with one axis wl and other axis gate delay.

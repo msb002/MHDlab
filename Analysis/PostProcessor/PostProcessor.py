@@ -32,6 +32,12 @@ from MPLCanvas import MyDynamicMplCanvas
 
 import traceback
 
+
+import mhdpy
+
+mhdpy
+
+
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
 
