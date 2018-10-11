@@ -26,23 +26,3 @@ def get_pathnames(path, regExp= ".*\.tdms$", searchNested = True):
     pathnames = pd.Series(pathnames, index = filenames)
     return pathnames
 
-
-def import_data(pathnames, filename):
-    #Will import all data in the defined file path with substring input
-    return TF(pathnames[filename])
-
-def to_dframe(file, groupname):
-    return file.object(groupname).as_dataframe()
-
-
-def create_ref(file):
-    dic = {}
-    groups = file.groups()
-    for group in groups:
-        dic[group] = []
-        for channel in file.group_channels(group):
-            channelname = channel.channel
-            dic[group] = np.append(dic[group], channelname)
-    return dic
-
-

@@ -11,10 +11,8 @@ from mhdpy.post.spe import _get_gatedelays
 
 mpl.rcParams.update({'font.size': 18})
 
-def hello():
-    print('hello')
 
-def SPE2df_spect(spefilepath, gatingtype = 'rep'):
+def spe2df_spect(spefilepath, gatingtype = 'rep'):
     #convert a sequential spectral SPE file to a pandas dataframe with one axis wl and other axis gate delay.
     spe_file = sl.load_from_files([spefilepath])
 
@@ -39,7 +37,7 @@ def SPE2df_spect(spefilepath, gatingtype = 'rep'):
 
 def getlaserdata():
     #pull the laser profile from a specific tdms file. The format of this tdms file is likely only used once
-    pathnames_laser= get_pathnames("C:\\Users\\aspit\\OneDrive\\Data\\LaserProfile")
+    pathnames_laser= _get_pathnames("C:\\Users\\aspit\\OneDrive\\Data\\LaserProfile")
     file_laser = TF(pathnames_laser['Test1_20Hz.tdms'])
     
     laser_common = file_laser.object('Raw').as_dataframe()
