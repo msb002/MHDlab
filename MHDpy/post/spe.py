@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Post Processing routines that parse log files.
+Post Processing routines to parse lightfield spe files
 """
 from ._tools import _write_dataframe
 

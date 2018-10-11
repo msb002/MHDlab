@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-A python module for the data acquisition pipeline of the MHD lab at NETL. 
+Modules for post processing of raw data. 
 
-Mainly includes a functions related to post processing and data analysis.
+Note: This is similar to ETL in database management. 
 """
 
 __all__ = ['logfiles','spe']

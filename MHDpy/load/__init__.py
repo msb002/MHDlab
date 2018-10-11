@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-A python module for the data acquisition pipeline of the MHD lab at NETL. 
-
-Mainly includes a functions related to post processing and data analysis.
+Modules for loading processed data into python environment, typically using pandas. 
 """
 
 __all__ = ['spe','common']

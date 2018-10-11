@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Post Processing routines that parse log files.
+Low level functions (example: cutting a tdms channel) used by higher-level post processing routines
 """
 
 from __future__ import unicode_literals
