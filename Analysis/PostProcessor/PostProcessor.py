@@ -32,12 +32,6 @@ from MPLCanvas import MyDynamicMplCanvas
 
 import traceback
 
-
-import mhdpy
-
-mhdpy
-
-
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
 
@@ -82,9 +76,18 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
-
-        self.routinelist = [func[1] for func in inspect.getmembers(pp,inspect.isfunction) if func[0][0] != '_']
-        self.routineliststr = [func[0] for func in inspect.getmembers(pp,inspect.isfunction) if func[0][0] != '_']
+        
+        self.routinelist = []
+        self.routineliststr = []
+        for module in inspect.getmembers(pp,inspect.ismodule):
+            #print(module[1])
+            members = inspect.getmembers(module[1],inspect.isfunction)
+            #print(members)
+            self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
+            self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
+            print(self.routineliststr)
+        #self.routinelist = []
+        
         self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):

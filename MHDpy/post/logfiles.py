@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 from ._tools import _cut_channel
 from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject
+import os
 
 # Mid level post processing (processes a specific type of file)
 def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
