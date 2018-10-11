@@ -14,7 +14,7 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'MHDpy'
+NAME = 'mhdpy'
 DESCRIPTION = 'python code for NETLs MHD labs data acquisition and analysis systems'
 URL = 'https://github.com/aspitarl/MHDlab'
 EMAIL = 'lee.aspitarte@netl.doe.gov'
@@ -111,7 +111,7 @@ class CleanCommand(Command):
     def finalize_options(self):
         pass
     def run(self):
-        os.system('RD /S /Q MHDpy.egg-info')
+        os.system('RD /S /Q mhdpy.egg-info')
 
 
 
@@ -128,7 +128,7 @@ setup(
     url=URL,
     #packages=find_packages(exclude=('tests',)),
     # If your package is a single module, use this instead of 'packages':
-    py_modules=['MHDpy'],
+    py_modules=['mhdpy'],
 
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],

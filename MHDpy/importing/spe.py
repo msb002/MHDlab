@@ -6,7 +6,7 @@ from nptdms import TdmsFile as TF
 import spe_loader as sl
 import pandas as pd
 
-from MHDpy.post.spe import _get_gatedelays
+from mhdpy.post.spe import _get_gatedelays
 
 mpl.rcParams.update({'font.size': 18})
 

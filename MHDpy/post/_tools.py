@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import numpy as np
 from nptdms import RootObject, ChannelObject
 import datetime
-import MHDpy.timefuncs as timefuncs
+import mhdpy.timefuncs as timefuncs
 
 #Low level post processing (Functions inside a file)
 

@@ -21,7 +21,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-import MHDpy.timefuncs as timefuncs
+import mhdpy.timefuncs as timefuncs
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"

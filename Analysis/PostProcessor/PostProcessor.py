@@ -2,7 +2,7 @@
 """
 A post processing GUI function for parsing log files.
 
-In general this Gui is used to call post processing functions from MHDpy.pproutines. Some post processing functions want informaiton like a list of input files and times to parse those files by, and this GUI facilitates gathering that information. Use the vertical bars on the graph to select the desired parsing times, or select a time selection function to get a list of times (from the event log for instance).
+In general this Gui is used to call post processing functions from mhdpy.post. Some post processing functions want informaiton like a list of input files and times to parse those files by, and this GUI facilitates gathering that information. Use the vertical bars on the graph to select the desired parsing times, or select a time selection function to get a list of times (from the event log for instance).
 """
 
 from __future__ import unicode_literals
@@ -19,8 +19,8 @@ import tzlocal
 import json
 import scipy.stats as stats
 
-import MHDpy.pproutines as pproutines
-import MHDpy.timefuncs as timefuncs
+import mhdpy.post as pp
+import mhdpy.timefuncs as timefuncs
 
 import layout
 import random
@@ -77,8 +77,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
 
-        self.routinelist = [func[1] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
-        self.routineliststr = [func[0] for func in inspect.getmembers(pproutines,inspect.isfunction) if func[0][0] != '_']
+        self.routinelist = [func[1] for func in inspect.getmembers(pp,inspect.isfunction) if func[0][0] != '_']
+        self.routineliststr = [func[0] for func in inspect.getmembers(pp,inspect.isfunction) if func[0][0] != '_']
         self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):

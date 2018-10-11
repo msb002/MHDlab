@@ -47,10 +47,7 @@ def lasertiming(filepaths):
     return intensities, timestamps
 
 
-#parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')
-
-
-
+#parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')  
 
 def SPEtoTDMS_seq(spefilepath,meastype):
     #convert a sequential SPE file (image or spectral) into a Tdms file. 
