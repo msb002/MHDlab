@@ -10,11 +10,13 @@ import spe_loader as sl
 import pandas as pd
 import os
 import datetime
+import numpy as np
+from dateutil import parser
 
 ### High level post processing (processes multiple types of files in a predefined way)
 def parse_lasertiming(fileinpaths, **kwargs):
     """Takes in a series of SPE sequential images and outputs a tdms file of the maximum of each image."""
-    intensities, timestamps = lasertiming(fileinpaths)
+    intensities, timestamps = _lasertiming(fileinpaths)
     folder = os.path.split(fileinpaths[0])[0]
     fileoutpath = os.path.join(folder, 'PIMax_Timing_Parsed.tdms')
 
@@ -22,7 +24,7 @@ def parse_lasertiming(fileinpaths, **kwargs):
         _write_dataframe(tdms_writer, intensities, "MaxIntensities")
         _write_dataframe(tdms_writer, timestamps, "Timestamps")
 
-def lasertiming(filepaths):
+def _lasertiming(filepaths):
     #folderpath = os.path.split(filepaths[0])
     #filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
     #filenames = [os.path.split(filepath) for filepath in filepaths if os.path.splitext(filepaths)[1] == '.spe']

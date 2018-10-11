@@ -45,7 +45,7 @@ def _cut_channel(channel,time1,time2, timedata = None):
         idx1, idx2 =  _get_indextime(timedata, time1,time2)
 
     if(idx1 == idx2): #times are not within file
-        raise ValueError('times not in file ' + channel.tdms_file.object().properties['name'])
+        raise ValueError('times not in channel') #.tdms_file.object().properties['name']
 
     props = channel.properties
     if(waveform):
