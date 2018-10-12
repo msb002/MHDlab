@@ -179,17 +179,24 @@ class MyDynamicMplCanvas(FigureCanvas):
                 #label = tc['project'] + '\\\n' + tc['subfolder'] + '\\\n' + tc['filename'] + '_' + tc['measurementnumber']
                 label = label + key + ': ' +  str(eventinfo[key]) + '\n'
 
+            #Note: green is currently what is used for clicked items
             colordict = {
                 'VIRunningChange': 'orange',
-                'TestCaseInfoChange': 'r'
+                'TestCaseInfoChange': 'r',
+                'VISavingChange' : 'c'
             }
 
             try:
                 color = colordict[event['event']['type']]
             except:
                 color = 'black'
-            
-            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,label = label,picker = 5, linewidth = 5))
+
+            linestyle = '-'
+            alpha = 1
+            if(event['event']['type'] == 'VISavingChange'):
+                if(event['event']['event info']['name'] == 'PIMAX_2'):
+                    alpha = 0.3
+            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,alpha = alpha,linestyle = linestyle,label = label,picker = 2, linewidth = 3))
             ##these vertical lines do not need to be in local time for some reason
         self.draw()
     
