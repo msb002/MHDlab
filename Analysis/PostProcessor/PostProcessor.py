@@ -50,6 +50,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 print('Could not read settings')
                 self.ppsettings = {}
                 #json.dump({},fileread)
+
+        if not 'defaultpath' in self.ppsettings:
+            self.ppsettings['defaultpath'] = 'C:\\Labview Test Data'
     
 
     
@@ -84,14 +87,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         This function also searches for the eventlog in higher folders.
         """
-        if 'defaultpath' in self.ppsettings:
-            dialogpath = self.ppsettings['defaultpath']
-        else:
-            dialogpath = 'C:\\Labview Test Data'
-
 
         if(filepath == 0):
-            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', dialogpath)
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', self.ppsettings['defaultpath'])
             filepath = paths[0]
         if(filepath == ''):
             pass
@@ -263,7 +261,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if(isinternalfile):
             fileinpaths = [self.logfilepath]
         else:
-            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', 'C:\\Labview Test Data', 'All Files (*)')[0]
+            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', self.ppsettings['defaultpath'], 'All Files (*)')[0]
 
         #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
         if self.Logfiletdms == None:
@@ -340,6 +338,7 @@ MainWindow.show()
 
 #ui.open_tdmsfile('C:\\Labview Test Data\\2018-09-19\\Logfiles\\Sensors_TC\\Log_Sensors_TC_0.tdms') #Windows
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
+
 
 #ui.refresh()
 

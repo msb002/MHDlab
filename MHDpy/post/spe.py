@@ -15,11 +15,16 @@ from dateutil import parser
 ### High level post processing (processes multiple types of files in a predefined way)
 def parse_lasertiming(fileinpaths, **kwargs):
     """Takes in a series of SPE sequential images and outputs a tdms file of the maximum of each image."""
-    intensities, timestamps = _lasertiming(fileinpaths)
+    intensities, timestamps, gatedelays = _lasertiming(fileinpaths)
     folder = os.path.split(fileinpaths[0])[0]
     fileoutpath = os.path.join(folder, 'PIMax_Timing_Parsed.tdms')
 
+    
+
     with TdmsWriter(fileoutpath, mode = 'w') as tdms_writer:
+        root_object = RootObject(properties={ })
+        channel_object = ChannelObject('Gate Delays', 'Gate Delays' , gatedelays)
+        tdms_writer.write_segment([root_object,channel_object])
         _write_dataframe(tdms_writer, intensities, "MaxIntensities")
         _write_dataframe(tdms_writer, timestamps, "Timestamps")
 
@@ -94,15 +99,16 @@ def _lasertiming(filepaths):
     i=0    
     for spe_file in spe_files:
         frames  = spe_file.data
-        intensity = list(map(lambda x: x[0].max(), frames))
+        intensity = list(map(lambda x: x[0].max(), frames))       
         try:
-            intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
             timestamps.iloc[:,i] = pd.Series(_get_starttimes(spe_file), index = timestamps.index)
+            intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
             i=i+1
         except ValueError: #comes up if there is an incomplete file. 
-            print(spe_file, ' did not have correct number of data points')
+            print('A SPE file did not have correct number of data points. Note that first file must have correct number of data points')
     intensities = intensities.truncate(after = i, axis = 'columns')
-    return intensities, timestamps
+    timestamps = timestamps.truncate(after = i, axis = 'columns')
+    return intensities, timestamps, gatedelays
 
 
 def _get_gatedelays(spe_file):
