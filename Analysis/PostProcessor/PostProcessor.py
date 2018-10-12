@@ -63,7 +63,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def link_buttons(self):
         """links internal function to the various widgets in the main window"""
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
-        self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
+        self.plotwidget.setGeometry(self.mplframe.geometry())
         self.plotwidget.setObjectName("widget")
         self.startTimeInput.dateTimeChanged.connect(self.refresh)
         self.endTimeInput.dateTimeChanged.connect(self.refresh)
@@ -72,7 +72,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
         self.btn_parse.clicked.connect(self.run_routine)
-        self.btn_open.clicked.connect(self.open_tdmsfile)
         self.actionOpen.triggered.connect(self.open_tdmsfile)
         self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
@@ -84,7 +83,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             members = inspect.getmembers(module[1],inspect.isfunction)
             self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
             self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
-        self.combo_routines.insertItems(0,self.routineliststr)
+        self.combo_function.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):
         """
@@ -214,7 +213,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             string += json.dumps(event['event'])
             string += '\r\n'
         
-        self.textBrowser.setText(string)
+        self.text_events.setText(string)
 
         tci_cut = self.geteventinfo('TestCaseInfoChange',cut = True)
         basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
@@ -250,14 +249,14 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
-        index = self.combo_routines.currentIndex()
+        index = self.combo_function.currentIndex()
         pp_function = self.routinelist[index]
 
         #parse a file based on the seleted times, internal or external
         isinternalfile = not (self.combo_files.currentIndex())
         times = None
         fileoutpaths_list = None
-        
+
         #Get the list of files to parse
         if(isinternalfile):
             fileinpaths = [self.logfilepath]
@@ -293,6 +292,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
+
+            #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
+            times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
         elif timetype == 2:
             saveevents = self.geteventinfo('VISavingChange',cut = False)
             camsaveevents = []
@@ -306,7 +308,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 event2 = camsaveevents[i+1]
                 if(event1['newstate'] == True and event2['newstate'] == False):
                     times.append((timeslist[i],timeslist[i+1]))
-
+        print(times)
         return times
 
     def gen_fileout(self,fileinpaths,times):
@@ -337,12 +339,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.routinelist = []
         self.routineliststr = []
-        self.combo_routines.clear()
+        self.combo_function.clear()
         for module in inspect.getmembers(pp,inspect.ismodule):
             members = inspect.getmembers(module[1],inspect.isfunction)
             self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
             self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
-        self.combo_routines.insertItems(0,self.routineliststr)
+        self.combo_function.insertItems(0,self.routineliststr)
 
 def reload_package(package):
     #https://stackoverflow.com/questions/28101895/reloading-packages-and-their-submodules-recursively-in-python
