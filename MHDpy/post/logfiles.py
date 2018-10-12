@@ -9,6 +9,7 @@ from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject
 import os
 
+
 # Mid level post processing (processes a specific type of file)
 def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
     """
@@ -66,12 +67,13 @@ def cut_powermeter(fileinpaths, times, fileoutpaths_list, **kwargs):
                 with TdmsWriter(fileoutpath,mode='w') as tdms_writer:
                     for group in tdmsfile.groups():
                         timedata = tdmsfile.channel_data(group,'Time_LV')
+                        print(timedata)
+                        timechannel = tdmsfile.object(group,'Time_LV')
                         for channel in tdmsfile.group_channels(group):
                             if type(channel.data_type.size) == type(None): break #skips over non numeric channels
                             channel_object = _cut_channel(channel,time1,time2, timedata = timedata)
-                            tdms_writer.write_segment([
-                                root_object,
-                                channel_object])
+                            tdms_writer.write_segment([root_object,channel_object])
+                        tdms_writer.write_segment([root_object,timechannel])
             except ValueError as error:
                 print(error)
                 print('removing the file at: \n', fileoutpath)

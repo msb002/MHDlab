@@ -16,12 +16,15 @@ import json
 import scipy.stats as stats
 import layout
 import inspect
+import importlib
 
 from PyQt5 import QtCore, QtWidgets
 from MPLCanvas import MyDynamicMplCanvas
 
 import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
+
+import types
 
 
 progname = os.path.basename(sys.argv[0])
@@ -70,6 +73,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_parse.clicked.connect(self.run_routine)
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.actionOpen.triggered.connect(self.open_tdmsfile)
+        self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         
         #Pull post processing funcitons from the post processing package and add to the routines combo box
@@ -326,7 +330,41 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             if(time<=time_cut): 
                 tci_cut.append(event)
         return tci_cut[-1]
-        
+
+    def reloadppr(self):
+        reload_package(pp)
+
+        self.routinelist = []
+        self.routineliststr = []
+        self.combo_routines.clear()
+        for module in inspect.getmembers(pp,inspect.ismodule):
+            members = inspect.getmembers(module[1],inspect.isfunction)
+            self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
+            self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
+        self.combo_routines.insertItems(0,self.routineliststr)
+
+def reload_package(package):
+    #https://stackoverflow.com/questions/28101895/reloading-packages-and-their-submodules-recursively-in-python
+    assert(hasattr(package, "__package__"))
+    fn = package.__file__
+    fn_dir = os.path.dirname(fn) + os.sep
+    module_visit = {fn}
+    del fn
+
+    def reload_recursive_ex(module):
+        importlib.reload(module)
+
+        for module_child in vars(module).values():
+            if isinstance(module_child, types.ModuleType):
+                fn_child = getattr(module_child, "__file__", None)
+                if (fn_child is not None) and fn_child.startswith(fn_dir):
+                    if fn_child not in module_visit:
+                        # print("reloading:", fn_child, "from", module)
+                        module_visit.add(fn_child)
+                        reload_recursive_ex(module_child)
+
+    return reload_recursive_ex(package)
+ 
 
 app = QtWidgets.QApplication(sys.argv)
 

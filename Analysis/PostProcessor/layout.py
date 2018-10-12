@@ -167,7 +167,11 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.actionOpen = QtWidgets.QAction(MainWindow)
         self.actionOpen.setObjectName("actionOpen")
+        self.actionReload_ppr = QtWidgets.QAction(MainWindow)
+        self.actionReload_ppr.setObjectName("actionReload_ppr")
         self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionReload_ppr)
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -210,4 +214,5 @@ class Ui_MainWindow(object):
         self.label_15.setText(_translate("MainWindow", "Times"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
+        self.actionReload_ppr.setText(_translate("MainWindow", "Reload PPR"))
 
