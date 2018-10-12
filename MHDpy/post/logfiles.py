@@ -27,6 +27,7 @@ def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
             fileoutpath = fileoutpaths[j]
             
             direc = os.path.split(fileoutpath)[0]
+            print("test",direc)
             if not os.path.exists(direc):
                 os.makedirs(direc)
 

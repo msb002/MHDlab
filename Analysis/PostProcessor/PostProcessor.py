@@ -39,6 +39,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.channel = None # replace in __init__
         self.eventlog = None
         self.Logfiletdms = None
+        self.logfilepath = None
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
@@ -253,30 +254,30 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         pp_function = self.routinelist[index]
 
         #parse a file based on the seleted times, internal or external
-        folder = self.folderEdit.text()
-
-        #filename = self.filenameEdit.text() #Abandoned custom filename for now as it cases issues
-
         isinternalfile = not (self.combo_files.currentIndex())
-
-        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
-
+        times = None
+        fileoutpaths_list = None
+        
         #Get the list of files to parse
         if(isinternalfile):
             fileinpaths = [self.logfilepath]
         else:
             fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', self.ppsettings['defaultpath'], 'All Files (*)')[0]
 
-        #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
-        if self.Logfiletdms == None:
-            times = None
-            fileoutpaths_list = None
+        if fileinpaths == [None]:
+            print('fileinpaths was empty')
         else:
+            #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
             times = self.gen_times()
-            fileoutpaths_list = self.gen_fileout(fileinpaths,times)
-            
-        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
-        pp_function(**kwargs)
+            timetype = self.combo_times.currentIndex()
+            if(isinternalfile and timetype == 0): #if parsing an internal file with the markers, you can use custom filenames
+                fileoutpaths_list = [[os.path.join(self.datefolder, self.folderEdit.text(), self.filenameEdit.text()) + '.tdms']]
+            else:
+                fileoutpaths_list = self.gen_fileout(fileinpaths,times)
+
+            kwargs = {'MainWindow': MainWindow, 'ui' : ui}
+            kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+            pp_function(**kwargs)
 
     def gen_times(self):
         """Generate a list of times, based on the time combo list in the mainwindow"""
