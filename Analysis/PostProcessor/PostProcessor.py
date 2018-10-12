@@ -297,7 +297,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             camsaveevents = []
             timeslist = []
             for time, saveevent in saveevents.items():
-                if saveevent['name'] == "PIMAX-Cam1":
+                if saveevent['name'] == "PIMAX_1":
                     camsaveevents.append(saveevent)
                     timeslist.append(time)
             for i in range(len(camsaveevents)-1):
