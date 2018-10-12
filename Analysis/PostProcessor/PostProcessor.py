@@ -66,6 +66,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
         self.btn_parse.clicked.connect(self.run_routine)
         self.btn_open.clicked.connect(self.open_tdmsfile)
+        self.actionOpen.triggered.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         
         #Pull post processing funcitons from the post processing package and add to the routines combo box
