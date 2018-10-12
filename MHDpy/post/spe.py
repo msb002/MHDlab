@@ -5,7 +5,6 @@ Post Processing routines to parse lightfield spe files
 from ._tools import _write_dataframe
 
 from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
-#import spe2py as spe
 import spe_loader as sl
 import pandas as pd
 import os
@@ -24,35 +23,8 @@ def parse_lasertiming(fileinpaths, **kwargs):
         _write_dataframe(tdms_writer, intensities, "MaxIntensities")
         _write_dataframe(tdms_writer, timestamps, "Timestamps")
 
-def _lasertiming(filepaths):
-    #folderpath = os.path.split(filepaths[0])
-    #filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
-    #filenames = [os.path.split(filepath) for filepath in filepaths if os.path.splitext(filepaths)[1] == '.spe']
-
-    spe_files = sl.load_from_files(filepaths)
-    if type(spe_files) != type(list()):
-        spe_files = [spe_files]
-    gatedelays = _get_gatedelays(spe_files[0])
-    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
-    timestamps = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
-    i=0    
-    for spe_file in spe_files:
-        frames  = spe_file.data
-        intensity = list(map(lambda x: x[0].max(), frames))
-        try:
-            intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
-            timestamps.iloc[:,i] = pd.Series(_get_starttimes(spe_file), index = timestamps.index)
-            i=i+1
-        except ValueError: #comes up if there is an incomplete file. 
-            print(spe_file, ' did not have correct number of data points')
-    intensities = intensities.truncate(after = i, axis = 'columns')
-    return intensities, timestamps
-
-
-#parse_lasertiming('C:\\Users\\aspit\\OneDrive\\Data\\2018-09-19\\Logfiles\\test')  
-
 def SPEtoTDMS_seq(spefilepath,meastype):
-    #convert a sequential SPE file (image or spectral) into a Tdms file. 
+    """convert a sequential SPE file (image or spectral) into a Tdms file. """
     if isinstance(spefilepath,bytes): #The labview addin passes a bytes instead of string. 
         spefilepath = spefilepath.decode("utf-8")
     
@@ -81,9 +53,8 @@ def SPEtoTDMS_seq(spefilepath,meastype):
     if(meastype == 1):
         write_image(tdmsfilepath, root_object, frames )
 
-
 def write_image(tdmsfilepath, root_object, frames ):
-    #subroutine for writing a series of images to a tdms file. 
+    """writes a series of images to a tdms file. """
     framenum = 0
     
     with TdmsWriter(tdmsfilepath, mode = 'a') as tdms_writer:
@@ -97,7 +68,7 @@ def write_image(tdmsfilepath, root_object, frames ):
             framenum = framenum +1   
             
 def write_spectra(tdmsfilepath, root_object, frames, wavelength ):
-    #subroutine for writing a series of spectra to a tmds file. 
+    """writes a series of spectra to a tmds file. """
     framenum = 0
     
     rawdata_group_object = GroupObject("Raw Data", properties={})
@@ -108,9 +79,34 @@ def write_spectra(tdmsfilepath, root_object, frames, wavelength ):
             tdms_writer.write_segment([root_object,rawdata_group_object,channel_object])
             framenum = framenum +1
 
+def _lasertiming(filepaths):
+    """generates a dataframe of intensities and timestamps from a list of spe filepaths"""
+    #folderpath = os.path.split(filepaths[0])
+    #filenames = [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath,f))]
+    #filenames = [os.path.split(filepath) for filepath in filepaths if os.path.splitext(filepaths)[1] == '.spe']
+
+    spe_files = sl.load_from_files(filepaths)
+    if type(spe_files) != type(list()):
+        spe_files = [spe_files]
+    gatedelays = _get_gatedelays(spe_files[0])
+    intensities = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
+    timestamps = pd.DataFrame(index = gatedelays, columns = range(len(filepaths)))
+    i=0    
+    for spe_file in spe_files:
+        frames  = spe_file.data
+        intensity = list(map(lambda x: x[0].max(), frames))
+        try:
+            intensities.iloc[:,i] = pd.Series(intensity, index = intensities.index)
+            timestamps.iloc[:,i] = pd.Series(_get_starttimes(spe_file), index = timestamps.index)
+            i=i+1
+        except ValueError: #comes up if there is an incomplete file. 
+            print(spe_file, ' did not have correct number of data points')
+    intensities = intensities.truncate(after = i, axis = 'columns')
+    return intensities, timestamps
+
 
 def _get_gatedelays(spe_file):
-    #pull a gate delay array a sequential SPE file. 
+    """pull a gate delay array from a sequential SPE file. """
     num_frames = spe_file.nframes
     
     Gatinginfo = spe_file.footer.SpeFormat.DataHistories.DataHistory.Origin.Experiment.Devices.Cameras.Camera.Gating.Sequential
@@ -123,7 +119,7 @@ def _get_gatedelays(spe_file):
     return gatedelays
 
 def _get_starttimes(spe_file):
-    #pulls an array of exposure start times for each file
+    """pulls an array of exposure start times from an spe file"""
     abstimestr = spe_file.footer.SpeFormat.MetaFormat.MetaBlock.TimeStamp[0]['absoluteTime']
     abstime = parser.parse(abstimestr)
     timestamp_idx = spe_file.metanames.index('ExposureStarted')
