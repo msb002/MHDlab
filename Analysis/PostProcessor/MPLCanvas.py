@@ -12,12 +12,10 @@ import sys
 import pytz
 import tzlocal
 import datetime
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from PyQt5 import QtCore, QtWidgets, QtGui
-
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -32,6 +30,7 @@ class MyDynamicMplCanvas(FigureCanvas):
     def __init__(self, mainwindow, parent = None, width =5, height = 4, dpi = 100):
         self.mainwindow = mainwindow #reference of main window so that those class funcitons can be called
 
+        mpl.rcParams.update({'font.size': 12})
         #setup the figure
         self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
         self.compute_initial_figure()
