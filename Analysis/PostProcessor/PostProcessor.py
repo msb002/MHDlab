@@ -76,6 +76,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
+        self.combo_function.currentIndexChanged.connect(self.refresh_docstring)
 
         self.refresh_modulelist()
         
@@ -101,14 +102,24 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.functionlist = []
         functionliststr = []
 
-        index = self.combo_module.currentIndex()
-        module = self.modulelist[index]
+        module = self.modulelist[self.combo_module.currentIndex()]
 
         members = inspect.getmembers(module,inspect.isfunction)
         self.functionlist.extend(func[1] for func in members if func[0][0] != '_')
         functionliststr.extend(func[0] for func in members if func[0][0] != '_')
 
         self.combo_function.insertItems(0,functionliststr)
+        self.refresh_docstring()
+
+    def refresh_docstring(self):
+        self.text_docstring.clear()
+        function = self.functionlist[self.combo_function.currentIndex()]
+        docstring = function.__doc__
+        if(docstring[0] == '\n'):
+            docstring = docstring[1:]
+
+        self.text_docstring.insertPlainText(docstring)
+
 
     def reloadppr(self):
         reload_package(pp)

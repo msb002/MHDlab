@@ -136,3 +136,4 @@ def _get_starttimes(spe_file):
     starttimes = [abstime + starttime for starttime in starttimedeltas] 
     starttimes = [time.timestamp() for time in starttimes]
     return starttimes
+
