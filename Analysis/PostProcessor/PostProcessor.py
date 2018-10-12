@@ -77,6 +77,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
         self.combo_function.currentIndexChanged.connect(self.refresh_docstring)
+        self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
 
         self.refresh_modulelist()
         
@@ -331,9 +332,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
             pp_function(**kwargs)
 
-    def gen_times(self):
+    def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
-        timetype = self.combo_times.currentIndex()
+        if timetype == None:
+            timetype = self.combo_times.currentIndex() 
         
         times = []
         if timetype == 0: 
@@ -382,11 +384,30 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return fileoutpaths_list
     
 
+    def cutinternalinloc(self):
+        """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
+        pp_function = pp.logfiles.cut_log_file
+        fileinpaths = [self.logfilepath]
+        times = self.gen_times(timetype = 0)
+
+        folder = os.path.split(self.logfilepath)[0]
+
+        basefilename = os.path.splitext(os.path.split(fileinpaths[0])[1])[0]
+
+        fileoutpaths_list = [[os.path.join(folder,basefilename+'_cut.tdms')]]
+
+        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+        pp_function(**kwargs)        
 
 
 
 def reload_package(package):
-    #https://stackoverflow.com/questions/28101895/reloading-packages-and-their-submodules-recursively-in-python
+    """
+    reloads a package and all subpackages
+
+    Found from: https://stackoverflow.com/questions/28101895/reloading-packages-and-their-submodules-recursively-in-python
+    """
     assert(hasattr(package, "__package__"))
     fn = package.__file__
     fn_dir = os.path.dirname(fn) + os.sep

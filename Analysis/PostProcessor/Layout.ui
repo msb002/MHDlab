@@ -402,7 +402,7 @@
    <widget class="QLabel" name="label_14">
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>600</x>
       <y>560</y>
       <width>55</width>
       <height>16</height>
@@ -415,9 +415,9 @@
    <widget class="QComboBox" name="combo_files">
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>600</x>
       <y>580</y>
-      <width>151</width>
+      <width>181</width>
       <height>22</height>
      </rect>
     </property>
@@ -448,20 +448,20 @@
    <widget class="QComboBox" name="combo_times">
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>600</x>
       <y>530</y>
-      <width>251</width>
+      <width>181</width>
       <height>22</height>
      </rect>
     </property>
     <item>
      <property name="text">
-      <string>Markers</string>
+      <string>Eventlog in Time Window</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Eventlog in Time Window</string>
+      <string>Markers</string>
      </property>
     </item>
     <item>
@@ -478,7 +478,7 @@
    <widget class="QLabel" name="label_15">
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>600</x>
       <y>510</y>
       <width>91</width>
       <height>16</height>
@@ -584,9 +584,23 @@
      <rect>
       <x>220</x>
       <y>530</y>
-      <width>401</width>
+      <width>371</width>
       <height>81</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_cutinternalinloc">
+    <property name="geometry">
+     <rect>
+      <x>790</x>
+      <y>520</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Cut Internal 
+ in location</string>
     </property>
    </widget>
    <widget class="QWidget" name="">
