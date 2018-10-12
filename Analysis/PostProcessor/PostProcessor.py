@@ -113,6 +113,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.refresh_docstring()
 
     def refresh_docstring(self):
+        """Updates the docstring display for selected post processing function"""
         self.text_docstring.clear()
         function = self.functionlist[self.combo_function.currentIndex()]
         docstring = function.__doc__
@@ -123,6 +124,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 
     def reloadppr(self):
+        """reloads the mhdpy package and updates the module list"""
         reload_package(pp)
         self.refresh_modulelist()
 
