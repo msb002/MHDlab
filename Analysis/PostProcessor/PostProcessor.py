@@ -75,15 +75,44 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.actionOpen.triggered.connect(self.open_tdmsfile)
         self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
+        self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
+
+        self.refresh_modulelist()
         
-        #Pull post processing funcitons from the post processing package and add to the routines combo box
-        self.routinelist = []
-        self.routineliststr = []
+
+    def refresh_modulelist(self):
+        """Pull public post processing modules from mhd.post and list in the module combo box"""
+        self.combo_module.clear()
+
+        self.modulelist = []
+        moduleliststr = []
+
         for module in inspect.getmembers(pp,inspect.ismodule):
-            members = inspect.getmembers(module[1],inspect.isfunction)
-            self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
-            self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
-        self.combo_function.insertItems(0,self.routineliststr)
+            if(module[0][0] != '_'):
+                self.modulelist.extend([module[1]])
+                moduleliststr.extend([module[0]])
+        
+        self.combo_module.insertItems(0,moduleliststr)
+        self.refresh_functionlist()
+
+    def refresh_functionlist(self):
+        """Obtain a list of public functions in the selected module and list them"""
+        self.combo_function.clear()
+        self.functionlist = []
+        functionliststr = []
+
+        index = self.combo_module.currentIndex()
+        module = self.modulelist[index]
+
+        members = inspect.getmembers(module,inspect.isfunction)
+        self.functionlist.extend(func[1] for func in members if func[0][0] != '_')
+        functionliststr.extend(func[0] for func in members if func[0][0] != '_')
+
+        self.combo_function.insertItems(0,functionliststr)
+
+    def reloadppr(self):
+        reload_package(pp)
+        self.refresh_modulelist()
 
     def open_tdmsfile(self, filepath= 0):
         """
@@ -250,7 +279,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
         index = self.combo_function.currentIndex()
-        pp_function = self.routinelist[index]
+        pp_function = self.functionlist[index]
 
         #parse a file based on the seleted times, internal or external
         isinternalfile = not (self.combo_files.currentIndex())
@@ -334,17 +363,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 tci_cut.append(event)
         return tci_cut[-1]
 
-    def reloadppr(self):
-        reload_package(pp)
 
-        self.routinelist = []
-        self.routineliststr = []
-        self.combo_function.clear()
-        for module in inspect.getmembers(pp,inspect.ismodule):
-            members = inspect.getmembers(module[1],inspect.isfunction)
-            self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
-            self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
-        self.combo_function.insertItems(0,self.routineliststr)
 
 def reload_package(package):
     #https://stackoverflow.com/questions/28101895/reloading-packages-and-their-submodules-recursively-in-python
