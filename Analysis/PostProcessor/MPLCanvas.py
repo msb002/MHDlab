@@ -49,8 +49,8 @@ class MyDynamicMplCanvas(FigureCanvas):
 
     def compute_initial_figure(self):
         self.dataline, = self.axes.plot([], [], 'r')
-        self.timeline1 = self.axes.axvline(0, linestyle = '--', color = 'gray')
-        self.timeline2 = self.axes.axvline(0, linestyle = '--', color = 'gray')
+        self.timeline1 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
+        self.timeline2 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
         self.eventticks = [mpl.lines.Line2D([0],[0])]
         bbox_props = dict(boxstyle="square", fc="white", ec="black", lw=2)
         self.annot = self.axes.text(0.25,0.25,'hello' ,visible = False, transform=self.axes.transAxes, backgroundcolor =  'w', bbox = bbox_props)
@@ -142,9 +142,6 @@ class MyDynamicMplCanvas(FigureCanvas):
             
         self.press = None 
         
-
-
-
     def update_data(self,channel):
         #updates the figure with a new channel. 
 
@@ -165,8 +162,6 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.zoom('all')
         self.fig.tight_layout()
         self.draw()
-
-
 
     def update_eventticks(self):
         #removes and replaces the event tick markers.
