@@ -55,6 +55,23 @@ def _cut_channel(channel,time1,time2, timedata = None):
 
     return ChannelObject(channel.group, channel.channel, channel.data[idx1:idx2], properties=props)
     
+def _cut_datetime_channel(channel,time1,time2):
+    """
+    cut an array of datetimes. This is a temporary function
+
+    used for powermeter for now, which logs times from labview (Time_LV), which is an array of datetime objects. In the future this, cutting of np64 time arrays, waveforms, and numeric channels should all be combined. 
+    """
+    timedata = channel.data
+    idx1, idx2 =  _get_indextime(timedata, time1,time2)
+
+    if(idx1 == idx2): #times are not within file
+        raise ValueError('times not in channel') #.tdms_file.object().properties['name']
+
+    props = channel.properties
+    return ChannelObject(channel.group, channel.channel, timedata[idx1:idx2], properties=props)
+
+
+
 def _get_indextime(timedata, time1,time2,dtype = 'datetime'):
     """Get the nearest indicies of two times in a time array, maintaining time order."""
     if(time2 > time1):

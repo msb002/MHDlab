@@ -17,6 +17,7 @@ import scipy.stats as stats
 import layout
 import inspect
 import importlib
+import types
 
 from PyQt5 import QtCore, QtWidgets
 from MPLCanvas import MyDynamicMplCanvas
@@ -24,7 +25,6 @@ from MPLCanvas import MyDynamicMplCanvas
 import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
 
-import types
 
 
 progname = os.path.basename(sys.argv[0])
