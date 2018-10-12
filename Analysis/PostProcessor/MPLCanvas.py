@@ -212,8 +212,12 @@ class MyDynamicMplCanvas(FigureCanvas):
             maxtime = self.axes.get_xlim()[1]
             padtime = (maxtime-mintime)/4
             self.axes.set_xlim(mintime - padtime,maxtime + padtime)
+    
+        miny = min(ydata)
+        maxy = max(ydata)
+        pady = (maxy-miny)/10
+        self.axes.set_ylim(miny-pady,maxy+pady)
 
         self.fig.autofmt_xdate()
-        self.axes.set_ylim(min(ydata),max(ydata))
         self.draw()
 
