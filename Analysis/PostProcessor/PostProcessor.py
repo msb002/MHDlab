@@ -7,31 +7,22 @@ In general this Gui is used to call post processing functions from mhdpy.post. S
 
 from __future__ import unicode_literals
 import numpy as np
-import time
-import pandas as pd
 import os
 import sys
 from nptdms import TdmsFile as TF
-from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 import datetime
 import pytz
-import tzlocal
 import json
 import scipy.stats as stats
+import layout
+import inspect
+
+from PyQt5 import QtCore, QtWidgets
+from MPLCanvas import MyDynamicMplCanvas
 
 import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
 
-
-import layout
-import random
-from PyQt5 import QtCore, QtWidgets, QtGui
-
-import inspect
-
-from MPLCanvas import MyDynamicMplCanvas
-
-import traceback
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
@@ -39,6 +30,8 @@ progversion = "0.1"
 progfolder = os.path.dirname(sys.argv[0])
 
 class Ui_MainWindow(layout.Ui_MainWindow):
+    """Main window of the post processor. Inherits from the MainWindow class within layout.py"""
+
     def __init__(self):
         self.channel = None # replace in __init__
         self.eventlog = None
@@ -59,9 +52,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 #json.dump({},fileread)
     
 
-    #The main window inherits from the MainWindow class within layout.py
+    
     def link_buttons(self):
-        #functions are tied to the widgets
+        """links internal function to the various widgets in the main window"""
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(QtCore.QRect(0, 0, 400, 300))
         self.plotwidget.setObjectName("widget")
@@ -71,27 +64,25 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
-
-
         self.btn_parse.clicked.connect(self.run_routine)
-
         self.btn_open.clicked.connect(self.open_tdmsfile)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         
+        #Pull post processing funcitons from the post processing package and add to the routines combo box
         self.routinelist = []
         self.routineliststr = []
         for module in inspect.getmembers(pp,inspect.ismodule):
-            #print(module[1])
             members = inspect.getmembers(module[1],inspect.isfunction)
-            #print(members)
             self.routinelist.extend(func[1] for func in members if func[0][0] != '_')
             self.routineliststr.extend(func[0] for func in members if func[0][0] != '_')
-            print(self.routineliststr)
-        #self.routinelist = []
-        
         self.combo_routines.insertItems(0,self.routineliststr)
 
     def open_tdmsfile(self, filepath= 0):
+        """
+        Loads in a tdms file to be displayed for parsing.
+        
+        This function also searches for the eventlog in higher folders.
+        """
         if 'defaultpath' in self.ppsettings:
             dialogpath = self.ppsettings['defaultpath']
         else:
@@ -135,7 +126,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.refresh()      
 
     def update_channel_display(self):
-        #Updates the channel list to display channels in selected group
+        """Updates the channel list to display channels in selected group"""
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         channelnamelist = []
@@ -157,9 +148,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
 
-        
     def refresh(self):
-        #full refresh of everything
+        """full refresh of everything"""
         selgroup = self.selectGroup.currentRow()
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         selchannel = self.selectChannel.currentRow()
@@ -174,7 +164,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
 
     def refresh_time(self):
-        #pull the time from the inputs and update the gray lines on the display and cut event log
+        """pull the time from the inputs and update the gray lines on the display and cut event log"""
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
         self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
         
@@ -187,7 +177,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget.draw()
 
     def update_stats(self,channel):
-        #update the statistics calculations and display
+        """update the statistics calculations and display"""
         idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
         idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
         if len(channel.data[idx1:idx2]) > 0:
@@ -199,7 +189,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
 
     def cut_eventlog(self):
-        #create array of events within the time window
+        """create array of events that are between the two timemarkers"""
         self.eventlog_cut= []
         for event in self.jsonfile:
             time = datetime.datetime.utcfromtimestamp(event['dt'])
@@ -211,7 +201,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.display_eventlog()
 
     def display_eventlog(self):
-        #refresh the cut eventlog in the text display and update the folder and filename inputs
+        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
         string = ''
 
         for event in self.eventlog_cut:
@@ -230,12 +220,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.filenameEdit.setText(filename)
 
     def gen_fileinfo(self,tci_event):
-            folder = tci_event['project'] + '\\'+ tci_event['subfolder']
-            filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
-            return folder, filename
+        """Takes in a test case and return a destination folder and filename"""
+        folder = tci_event['project'] + '\\'+ tci_event['subfolder']
+        filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
+        return folder, filename
         
     def geteventinfo(self,eventstr, cut = False):
-        #pull the testcase info from the json file, only those after time1 if cut is true
+        """pull the testcase info from the json file, only those after time1 if cut is true"""
         tci = {}
         for event in self.jsonfile:
             if event['event']['type'] == eventstr:
@@ -254,6 +245,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return tci
 
     def run_routine(self):
+        """Runs a post processing routine, passing in information from the main window as **kwargs"""
         index = self.combo_routines.currentIndex()
         pp_function = self.routinelist[index]
 
@@ -284,6 +276,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         pp_function(**kwargs)
 
     def gen_times(self):
+        """Generate a list of times, based on the time combo list in the mainwindow"""
         timetype = self.combo_times.currentIndex()
         
         times = []
@@ -313,6 +306,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return times
 
     def gen_fileout(self,fileinpaths,times):
+        """Generate fileoutpaths_list useing the times array and eventlog"""
         fileoutpaths_list = []
         
         for fileinpath in fileinpaths:
@@ -326,6 +320,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         return fileoutpaths_list
     
     def event_before(self,time_cut):
+        """returns the event before time_cut"""
         tci = self.geteventinfo('TestCaseInfoChange',cut = False)
         tci_cut = []
         for time, event in tci.items():
