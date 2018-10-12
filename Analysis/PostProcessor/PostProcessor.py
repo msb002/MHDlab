@@ -37,7 +37,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def __init__(self):
         self.channel = None # replace in __init__
-        self.eventlog = None
+        self.eventlog_latest = None #used so eventlog is only updated if new events are in time window
         self.Logfiletdms = None
         self.logfilepath = None
 
@@ -163,10 +163,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.selectGroup.clear()
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
-
+            
             self.update_channel_display()
-            self.plotwidget.update_eventticks()
+            
             self.refresh()      
+            self.plotwidget.update_eventticks()
 
     def update_channel_display(self):
         """Updates the channel list to display channels in selected group"""
@@ -188,8 +189,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         enddatetime = QtCore.QDateTime()
         enddatetime.setTime_t(timefuncs.np64_to_unix(self.timearray[-1]))
 
+        #update the time selectors, but don't signal to refresh
+        self.startTimeInput.blockSignals(True)
+        self.endTimeInput.blockSignals(True)
         self.startTimeInput.setDateTime(startdatetime)
         self.endTimeInput.setDateTime(enddatetime)
+        self.startTimeInput.blockSignals(False)
+        self.endTimeInput.blockSignals(False)
 
     def refresh(self):
         """full refresh of everything"""
@@ -202,12 +208,63 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.plotwidget.update_data(self.channel)
         
         self.refresh_time()
-        self.cut_eventlog()
+        self.display_eventlog()
         self.update_stats(self.channel)
         
 
+    def geteventinfo(self, cut = False ,eventstr = None):
+        """pull the testcase info from the json file, only those after time1 if cut is true"""
+        tci = {}
+        for event in self.jsonfile:
+            if (event['event']['type'] == eventstr) or (eventstr == None):
+                time = datetime.datetime.utcfromtimestamp(event['dt'])
+                time = time.replace(tzinfo=pytz.utc)
+                tci[time] = event['event']['event info']
+
+        #pull only those events before time1 if cut is true
+        if(cut):
+            tci_cut = {}
+            for time, event in tci.items():
+                if((time>self.time1) and (time<self.time2)): 
+                    tci_cut[time] = event
+            tci = tci_cut
+
+        return tci
+
+    def display_eventlog(self):
+        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
+        
+        self.eventlog_cut = self.geteventinfo(cut = True)
+        if self.eventlog_cut != self.eventlog_latest:
+            self.eventlog_latest = self.eventlog_cut
+
+            string = ''
+
+            for time, event in self.eventlog_cut.items():
+                string += time.strftime('%H:%M:%S') + ' - '
+                string += json.dumps(event)
+                string += '\r\n'
+            
+            self.text_events.setText(string)
+
+            basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
+            folder, filename = self.gen_fileinfo(self.event_before(self.time1))
+            filename = basefilename + filename
+            self.folderEdit.setText(folder)    
+            self.filenameEdit.setText(filename)
+
+    def event_before(self,time_cut):
+        """returns the event before time_cut"""
+        tci = self.geteventinfo(False,'TestCaseInfoChange')
+        tci_cut = []
+        for time, event in tci.items():
+            if(time<=time_cut): 
+                tci_cut.append(event)
+        return tci_cut[-1]
+
+
     def refresh_time(self):
-        """pull the time from the inputs and update the gray lines on the display and cut event log"""
+        """pull the time from the inputs and update the gray lines on the display"""
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
         self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
         
@@ -231,36 +288,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
             self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
 
-    def cut_eventlog(self):
-        """create array of events that are between the two timemarkers"""
-        self.eventlog_cut= []
-        for event in self.jsonfile:
-            time = datetime.datetime.utcfromtimestamp(event['dt'])
-            time = time.replace(tzinfo=pytz.utc)
-            if((time>self.time1) and (time<self.time2)):
-                self.eventlog_cut.append(event)
-        if self.eventlog_cut != self.eventlog:
-            self.eventlog = self.eventlog_cut
-            self.display_eventlog()
 
-    def display_eventlog(self):
-        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
-        string = ''
 
-        for event in self.eventlog_cut:
-            time = datetime.datetime.utcfromtimestamp(event['dt'])
-            string += time.strftime('%H:%M:%S') + ' - '
-            string += json.dumps(event['event'])
-            string += '\r\n'
-        
-        self.text_events.setText(string)
 
-        tci_cut = self.geteventinfo('TestCaseInfoChange',cut = True)
-        basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-        folder, filename = self.gen_fileinfo(tci_cut[-1])
-        filename = basefilename + filename
-        self.folderEdit.setText(folder)    
-        self.filenameEdit.setText(filename)
 
     def gen_fileinfo(self,tci_event):
         """Takes in a test case and return a destination folder and filename"""
@@ -268,24 +298,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
         return folder, filename
         
-    def geteventinfo(self,eventstr, cut = False):
-        """pull the testcase info from the json file, only those after time1 if cut is true"""
-        tci = {}
-        for event in self.jsonfile:
-            if event['event']['type'] == eventstr:
-                time = datetime.datetime.utcfromtimestamp(event['dt'])
-                time = time.replace(tzinfo=pytz.utc)
-                tci[time] = event['event']['event info']
 
-        #pull only those events before time1 if cut is true
-        if(cut):
-            tci_cut = []
-            for time, event in tci.items():
-                if(time<self.time1): 
-                    tci_cut.append(event)
-            tci = tci_cut
-
-        return tci
 
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
@@ -326,17 +339,21 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if timetype == 0: 
             #Parse all files based on internal time (graph) 
             times = [(self.time1,self.time2)]
-        elif timetype == 1: 
+        elif timetype == 1 or timetype == 2: 
             #Parse each file based on event log
-            tci = self.geteventinfo('TestCaseInfoChange',cut = False)
+            if timetype == 1:
+                cut = True
+            else:
+                cut = False
+            tci = self.geteventinfo(cut = cut,eventstr='TestCaseInfoChange')
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
 
             #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
             times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
-        elif timetype == 2:
-            saveevents = self.geteventinfo('VISavingChange',cut = False)
+        elif timetype == 3:
+            saveevents = self.geteventinfo(cut = False,eventstr='VISavingChange')
             camsaveevents = []
             timeslist = []
             for time, saveevent in saveevents.items():
@@ -348,7 +365,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 event2 = camsaveevents[i+1]
                 if(event1['newstate'] == True and event2['newstate'] == False):
                     times.append((timeslist[i],timeslist[i+1]))
-        print(times)
         return times
 
     def gen_fileout(self,fileinpaths,times):
@@ -365,14 +381,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return fileoutpaths_list
     
-    def event_before(self,time_cut):
-        """returns the event before time_cut"""
-        tci = self.geteventinfo('TestCaseInfoChange',cut = False)
-        tci_cut = []
-        for time, event in tci.items():
-            if(time<=time_cut): 
-                tci_cut.append(event)
-        return tci_cut[-1]
+
 
 
 

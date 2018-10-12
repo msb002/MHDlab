@@ -403,7 +403,7 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>515</y>
+      <y>560</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -416,8 +416,8 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>535</y>
-      <width>131</width>
+      <y>580</y>
+      <width>151</width>
       <height>22</height>
      </rect>
     </property>
@@ -435,10 +435,10 @@
    <widget class="QPushButton" name="btn_parse">
     <property name="geometry">
      <rect>
-      <x>773</x>
-      <y>532</y>
+      <x>789</x>
+      <y>572</y>
       <width>91</width>
-      <height>71</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -449,8 +449,8 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>580</y>
-      <width>131</width>
+      <y>530</y>
+      <width>251</width>
       <height>22</height>
      </rect>
     </property>
@@ -461,12 +461,17 @@
     </item>
     <item>
      <property name="text">
-      <string>Eventlog</string>
+      <string>Eventlog in Time Window</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Savetimes_PIMax</string>
+      <string>Entire Eventlog</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>PIMAX1 Savetimes</string>
      </property>
     </item>
    </widget>
@@ -474,7 +479,7 @@
     <property name="geometry">
      <rect>
       <x>630</x>
-      <y>560</y>
+      <y>510</y>
       <width>91</width>
       <height>16</height>
      </rect>
