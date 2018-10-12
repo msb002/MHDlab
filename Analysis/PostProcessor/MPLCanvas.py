@@ -4,20 +4,16 @@ PyQt 5 matplotlib canvas ojbect for plotting of data in the post processor GUI.
 """
 
 from __future__ import unicode_literals
-import numpy as np
-import time
-import pandas as pd
 import os
 import sys
 import pytz
 import tzlocal
 import datetime
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 
 import mhdpy.timefuncs as timefuncs
 
