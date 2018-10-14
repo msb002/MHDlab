@@ -456,12 +456,12 @@
     </property>
     <item>
      <property name="text">
-      <string>Eventlog in Time Window</string>
+      <string>Markers</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Markers</string>
+      <string>Eventlog in Time Window</string>
      </property>
     </item>
     <item>
@@ -603,7 +603,7 @@
  in location</string>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
