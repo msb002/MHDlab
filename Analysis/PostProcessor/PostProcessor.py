@@ -80,6 +80,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
 
         self.refresh_modulelist()
+        self.refresh_time()
         
 
     def refresh_modulelist(self):
@@ -307,32 +308,39 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
         index = self.combo_function.currentIndex()
         pp_function = self.functionlist[index]
+        
+        kwargs = {'MainWindow': MainWindow, 'ui' : ui} # Default kwargs to send to all post processing functions
 
-        #parse a file based on the seleted times, internal or external
-        isinternalfile = not (self.combo_files.currentIndex())
-        times = None
-        fileoutpaths_list = None
+        args = inspect.getfullargspec(pp_function).args # grab arguments of the funciton
 
-        #Get the list of files to parse
-        if(isinternalfile):
-            fileinpaths = [self.logfilepath]
-        else:
-            fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', self.ppsettings['defaultpath'], 'All Files (*)')[0]
+        if args.__contains__('fileinpaths'):
+            #if the ppfunction takes in a file path
+            isinternalfile = not (self.combo_files.currentIndex())
 
-        if fileinpaths == [None]:
-            print('fileinpaths was empty')
-        else:
-            #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
-            times = self.gen_times()
-            timetype = self.combo_times.currentIndex()
-            if(isinternalfile and timetype == 0): #if parsing an internal file with the markers, you can use custom filenames
-                fileoutpaths_list = [[os.path.join(self.datefolder, self.folderEdit.text(), self.filenameEdit.text()) + '.tdms']]
+            #Get the list of files to parse
+            if(isinternalfile):
+                fileinpaths = [self.logfilepath]
             else:
-                fileoutpaths_list = self.gen_fileout(fileinpaths,times)
+                fileinpaths = QtWidgets.QFileDialog.getOpenFileNames(MainWindow, 'Open File', self.ppsettings['defaultpath'], 'All Files (*)')[0]
 
-            kwargs = {'MainWindow': MainWindow, 'ui' : ui}
-            kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
-            pp_function(**kwargs)
+            if fileinpaths == [None]:
+                print('fileinpaths was empty')
+            else:
+                #if file in paths were correctly determined
+                kwargs = {**kwargs, 'fileinpaths':fileinpaths}              
+                if args.__contains__('times') or args.__contains__('fileoutpaths_list'):
+                    #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
+                    times = self.gen_times()
+                    timetype = self.combo_times.currentIndex()
+                    if(isinternalfile and timetype == 0): #if parsing an internal file with the markers, you can use custom filenames
+                        fileoutpaths_list = [[os.path.join(self.datefolder, self.folderEdit.text(), self.filenameEdit.text()) + '.tdms']]
+                    else:
+                        fileoutpaths_list = self.gen_fileout(fileinpaths,times)
+                    kwargs = {**kwargs, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+                pp_function(**kwargs)
+        else:
+            pp_function(**kwargs) # need to figure how to to remove this redundant call and also allow for abort on empty fileinpaths
+            
 
     def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
