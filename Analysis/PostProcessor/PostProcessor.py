@@ -139,6 +139,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         else:
             with open(filepath) as file_read:
                 self.jsonfile = json.load(file_read)
+            folder = os.path.split(filepath)[0]
+            self.datefolder = folder
 
         #self.refresh()      
         self.plotwidget.update_eventticks()
