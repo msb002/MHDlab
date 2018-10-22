@@ -1,7 +1,0 @@
-README.md
-setup.py
-mhdpy.egg-info/PKG-INFO
-mhdpy.egg-info/SOURCES.txt
-mhdpy.egg-info/dependency_links.txt
-mhdpy.egg-info/requires.txt
-mhdpy.egg-info/top_level.txt
