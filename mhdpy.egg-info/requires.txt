@@ -1,0 +1,7 @@
+spe2py
+numpy
+pandas
+nptdms
+pytz
+pyqt5
+pyqt5-tools

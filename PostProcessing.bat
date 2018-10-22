@@ -1,1 +1,1 @@
-start pythonw "Analysis\PostProcessor\PostProcessor.py"
+start python "Analysis\PostProcessor\PostProcessor.py"
