@@ -2,6 +2,9 @@
 
 import os
 import nptdms
+import re 
+import pandas as pd
+
 
 def create_tcdict(filepaths, loadfn, prefix = None ):
     """takes in a list of files and a lod function, and creates a dict of a df for each file. If a prefix is passed, that is removed from the filename (typically the instrument name so only the test case is left as the dict key)"""
@@ -19,6 +22,31 @@ def create_tcdict(filepaths, loadfn, prefix = None ):
         dfs[testcase] =df
     
     return dfs
+
+
+def tcdict2mi(tcdict,regexs):
+    """
+    takes in a test case dict and regular expressions to create multi indexed test case df
+    
+    regex is in form of {'Temperature' : '^(.+?)C_', 'Reprate': '_(.+?)Hz'}
+    needs to be combined with create_tcdict to just create one multiindexed df from start...
+    """
+    mi_array = []
+    for rekey in regexs:
+        regex = regexs[rekey]
+        i_array = []
+        for tckey in tcdict:
+            m  = re.search(regex,tckey)
+            if (m):
+                i_array.append(float(m.groups(1)[0]))
+                #print(m.groups(1)[0])
+        mi_array.append(i_array)
+    mi = pd.MultiIndex.from_arrays(mi_array , names = regexs.keys())
+    
+    df_array = [tcdict[key] for key in tcdict]
+    
+    df = pd.DataFrame(df_array, index = mi)
+    return df
 
 def tdms2df(filepath):
     tdmsfile = nptdms.TdmsFile(filepath)
