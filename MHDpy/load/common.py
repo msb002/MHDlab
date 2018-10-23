@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def create_tcdict(filepaths, loadfn, prefix = None ):
-    """takes in a list of files and a lod function, and creates a dict of a df for each file. If a prefix is passed, that is removed from the filename (typically the instrument name so only the test case is left as the dict key)"""
+    """takes in a list of files and a load function, and creates a dict of a df for each file. If a prefix is passed, that is removed from the filename (typically the instrument name so only the test case is left as the dict key)"""
 
     dfs = {}
 

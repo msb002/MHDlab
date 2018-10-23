@@ -3,7 +3,7 @@
 Modules for loading processed data into python environment, typically using pandas. 
 """
 
-__all__ = ['spe','common']
+__all__ = ['spe','common', 'ocop']
 
 from mhdpy.load import *
 
