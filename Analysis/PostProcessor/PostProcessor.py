@@ -73,6 +73,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
         self.btn_parse.clicked.connect(self.run_routine)
         self.actionOpen.triggered.connect(self.open_tdmsfile)
+        self.actionOpen_Eventlog.triggered.connect(self.open_eventlog)
         self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
         self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
@@ -129,6 +130,25 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         reload_package(pp)
         self.refresh_modulelist()
 
+    def open_eventlog(self, filepath= 0):
+        if(filepath == 0):
+            paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', self.ppsettings['defaultpath'])
+            filepath = paths[0]
+        if(filepath == ''):
+            pass
+        else:
+            with open(filepath) as file_read:
+                self.jsonfile = json.load(file_read)
+            folder = os.path.split(filepath)[0]
+            self.datefolder = folder
+
+        #self.refresh()      
+        self.plotwidget.update_eventticks()
+        timestamp1 = self.jsonfile[0]['dt']
+        timestamp2 = self.jsonfile[-1]['dt']
+        self.update_time_inputs(timestamp1,timestamp2)
+        self.refresh()
+
     def open_tdmsfile(self, filepath= 0):
         """
         Loads in a tdms file to be displayed for parsing.
@@ -150,6 +170,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             with open(self.settingspath,'w') as writefile:
                 self.ppsettings['defaultpath'] = folder
                 json.dump(self.ppsettings,writefile )
+
+
 
             #search upward in file directory for eventlog.json, then set that as the date folder
             while(True):             
@@ -184,14 +206,20 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
 
-        #update_time_displays : updates the time inputs to max and min of channel
         self.timearray = channels[0].time_track(absolute_time = True)
         self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
+        timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
+        timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
+
+        self.update_time_inputs(timestamp1,timestamp2)
+
+    def update_time_inputs(self, timestamp1, timestamp2):
+        #update_time_displays : updates the time inputs to max and min of channel
 
         startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(timefuncs.np64_to_unix(self.timearray[0]))
+        startdatetime.setTime_t(timestamp1)
         enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(timefuncs.np64_to_unix(self.timearray[-1]))
+        enddatetime.setTime_t(timestamp2)
 
         #update the time selectors, but don't signal to refresh
         self.startTimeInput.blockSignals(True)
@@ -203,17 +231,20 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def refresh(self):
         """full refresh of everything"""
-        selgroup = self.selectGroup.currentRow()
-        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-        selchannel = self.selectChannel.currentRow()
+        if(self.Logfiletdms != None):
+            selgroup = self.selectGroup.currentRow()
+            channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+            selchannel = self.selectChannel.currentRow()
 
-        if (self.channel == None) or (self.channel != channels[selchannel]):
-            self.channel = channels[selchannel]
-            self.plotwidget.update_data(self.channel)
+            if (self.channel == None) or (self.channel != channels[selchannel]):
+                self.channel = channels[selchannel]
+                self.plotwidget.update_data(self.channel)
         
+            
+            self.update_stats(self.channel)
         self.refresh_time()
         self.display_eventlog()
-        self.update_stats(self.channel)
+        
         
 
     def geteventinfo(self, cut = False ,eventstr = None):
@@ -250,12 +281,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 string += '\r\n'
             
             self.text_events.setText(string)
-
-            basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-            folder, filename = self.gen_fileinfo(self.event_before(self.time1))
-            filename = basefilename + filename
-            self.folderEdit.setText(folder)    
-            self.filenameEdit.setText(filename)
+            if(self.Logfiletdms != None):
+                basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
+                folder, filename = self.gen_fileinfo(self.event_before(self.time1))
+                filename = basefilename + filename
+                self.folderEdit.setText(folder)    
+                self.filenameEdit.setText(filename)
 
     def event_before(self,time_cut):
         """returns the event before time_cut"""
@@ -292,17 +323,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
             self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
 
-
-
-
-
     def gen_fileinfo(self,tci_event):
         """Takes in a test case and return a destination folder and filename"""
         folder = tci_event['project'] + '\\'+ tci_event['subfolder']
         filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
         return folder, filename
-        
-
 
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""

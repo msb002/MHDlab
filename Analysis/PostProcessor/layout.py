@@ -205,7 +205,10 @@ class Ui_MainWindow(object):
         self.actionOpen.setObjectName("actionOpen")
         self.actionReload_ppr = QtWidgets.QAction(MainWindow)
         self.actionReload_ppr.setObjectName("actionReload_ppr")
+        self.actionOpen_Eventlog = QtWidgets.QAction(MainWindow)
+        self.actionOpen_Eventlog.setObjectName("actionOpen_Eventlog")
         self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addAction(self.actionOpen_Eventlog)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionReload_ppr)
         self.menubar.addAction(self.menuFile.menuAction())
@@ -255,6 +258,7 @@ class Ui_MainWindow(object):
         self.btn_cutinternalinloc.setText(_translate("MainWindow", "Cut Internal \n"
 " in location"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
-        self.actionOpen.setText(_translate("MainWindow", "Open"))
+        self.actionOpen.setText(_translate("MainWindow", "Open Logfile"))
         self.actionReload_ppr.setText(_translate("MainWindow", "Reload PPR"))
+        self.actionOpen_Eventlog.setText(_translate("MainWindow", "Open Eventlog"))
 

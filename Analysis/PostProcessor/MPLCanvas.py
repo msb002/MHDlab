@@ -198,8 +198,18 @@ class MyDynamicMplCanvas(FigureCanvas):
     
     def zoom(self,option):
         #change the x window size, depending on the option
-        timearray = self.dataline.get_xdata()
-        ydata = self.dataline.get_ydata()
+        
+        if self.mainwindow.Logfiletdms == None:
+            ydata = [0,1]
+            time1 = datetime.datetime.utcfromtimestamp(self.mainwindow.jsonfile[0]['dt'])
+            time2 = datetime.datetime.utcfromtimestamp(self.mainwindow.jsonfile[-1]['dt'])
+            timearray = [time1,time2]
+            
+        else:
+            ydata = self.dataline.get_ydata()
+            timearray = self.dataline.get_xdata()
+        
+        
         if(option == 'sel'):
             #vertical line selection
             self.axes.set_xlim(self.timeline1.get_xdata()[0],self.timeline2.get_xdata()[0])
@@ -215,8 +225,9 @@ class MyDynamicMplCanvas(FigureCanvas):
             maxtime = self.axes.get_xlim()[1]
             padtime = (maxtime-mintime)/4
             self.axes.set_xlim(mintime - padtime,maxtime + padtime)
-    
-        miny = min(ydata)
+
+            
+        miny = min(ydata)       
         maxy = max(ydata)
         pady = (maxy-miny)/10
         self.axes.set_ylim(miny-pady,maxy+pady)
