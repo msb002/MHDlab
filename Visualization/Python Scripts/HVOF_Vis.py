@@ -14,8 +14,8 @@ def HVOF_Calc(arr):
     #Density of Oxygen from Ideal Gas Law (g/L)
     rho_O = 32/22.4
 
-    #Density of Kerosene (kg/m^3)
-    rho_kero = 814.8
+    #Density of Kerosene (kg/L)
+    rho_kero = 0.8148
 
     #Heat/mass of kerosene (KJ/g)
     Q_kero = 64.0
@@ -27,7 +27,7 @@ def HVOF_Calc(arr):
     Fl_fuel, Fl_w, T_in, T_out, m_dot_O = arr
     
     #Phi Calculation: mass flow is calculated in g/min
-    m_dot_fuel = Fl_fuel * rho_kero
+    m_dot_fuel = Fl_fuel * rho_kero/1000 #1000g/1kg
     phi = (m_dot_fuel/m_dot_O)/stoich
     
     #Heat Calculations
