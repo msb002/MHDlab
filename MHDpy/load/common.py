@@ -28,8 +28,9 @@ def tcdict2mi(tcdict,regexs):
     """
     takes in a test case dict and regular expressions to create multi indexed test case df
     
-    regex is in form of {'Temperature' : '^(.+?)C_', 'Reprate': '_(.+?)Hz'}
-    needs to be combined with create_tcdict to just create one multiindexed df from start...
+    regex is in form of {'Temperature' : '(\d+)C_', 'Power': '_(\d+)kV', 'Reprate': '_(\d+)Hz' }
+    need to play wit the order of regex to get the multiindex right
+    Todo: with create_tcdict to just create one multiindexed df from start...
     """
     mi_array = []
     for rekey in regexs:
@@ -39,7 +40,6 @@ def tcdict2mi(tcdict,regexs):
             m  = re.search(regex,tckey)
             if (m):
                 i_array.append(float(m.groups(1)[0]))
-                #print(m.groups(1)[0])
         mi_array.append(i_array)
     mi = pd.MultiIndex.from_arrays(mi_array , names = regexs.keys())
     
