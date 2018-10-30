@@ -88,3 +88,19 @@ def tdms2df(filepath):
 
 def _remove_prefix(s, prefix):
     return s[len(prefix):] if s.startswith(prefix) else s
+
+
+def last_measnum(df):
+    """Iterates through the multiindex and only uses the last measurement number"""
+    trim_index = df.index.droplevel(3).drop_duplicates()
+
+    trim_index
+    trim_arr = []
+    for testcase in trim_index:
+        df_temp = df.loc[testcase]
+        df_temp = df_temp.iloc[-1]
+        trim_arr.append(df_temp)
+
+    trim_df = pd.DataFrame(trim_arr, index = trim_index)
+    
+    return trim_df

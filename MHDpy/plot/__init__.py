@@ -2,7 +2,7 @@
 """
 Modules for generating plots
 """
-__all__ = ['trpl']
+__all__ = ['trpl','common']
 
 from mhdpy.plot import *
 
