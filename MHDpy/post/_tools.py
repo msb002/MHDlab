@@ -37,6 +37,7 @@ def _cut_channel(channel,time1,time2, timedata = None):
     waveform = False
     if(timedata == None): #if no timedata is passed, assume channel is a waveform
         timedata = channel.time_track(absolute_time = True)
+        
         time1 = np.datetime64(time1)
         time2 = np.datetime64(time2)
         idx1, idx2 =  _get_indextime(timedata, time1,time2, dtype = 'np64')
@@ -47,7 +48,9 @@ def _cut_channel(channel,time1,time2, timedata = None):
     if(idx1 == idx2): #times are not within file
         raise ValueError('times not in channel') #.tdms_file.object().properties['name']
 
-    props = channel.properties
+    props = channel.properties.copy() #watch out, dicts must be explicity copied to not alter the time track
+    # print(type(props))
+
     if(waveform):
         start= props['wf_start_time']
         offset = datetime.timedelta(milliseconds = props['wf_increment']*1000*idx1)
@@ -67,7 +70,7 @@ def _cut_datetime_channel(channel,time1,time2):
     if(idx1 == idx2): #times are not within file
         raise ValueError('times not in channel') #.tdms_file.object().properties['name']
 
-    props = channel.properties
+    props = channel.properties.copy()
     return ChannelObject(channel.group, channel.channel, timedata[idx1:idx2], properties=props)
 
 

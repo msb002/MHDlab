@@ -362,8 +362,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                     else:
                         fileoutpaths_list = self.gen_fileout(fileinpaths,times)
                     kwargs = {**kwargs, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+                
                 pp_function(**kwargs)
         else:
+            
             pp_function(**kwargs) # need to figure how to to remove this redundant call and also allow for abort on empty fileinpaths
             
 

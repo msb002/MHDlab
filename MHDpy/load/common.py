@@ -27,14 +27,17 @@ def create_tcdict(filepaths, loadfn, prefixes = None ):
     return dfs
 
 
-def tcdict2mi(tcdict,regexs):
+def tcdict2mi(tcdict,regexs,drop = True):
     """
     takes in a test case dict and regular expressions to create multi indexed test case df
     
     regex is in form of {'Temperature' : '(\d+)C_', 'Power': '_(\d+)kV', 'Reprate': '_(\d+)Hz' }
+    Note: There will be problems if there are duplicates! each file need to have unique testcase including meas number
     need to play wit the order of regex to get the multiindex right
     Todo: with create_tcdict to just create one multiindexed df from start...
     """
+    regexs['Measnum'] = '(\d+)$'
+
     mi_array = []
     for rekey in regexs:
         regex = regexs[rekey]
@@ -44,11 +47,16 @@ def tcdict2mi(tcdict,regexs):
             if (m):
                 i_array.append(float(m.groups(1)[0]))
         mi_array.append(i_array)
+
     mi = pd.MultiIndex.from_arrays(mi_array , names = regexs.keys())
-    
+
     df_array = [tcdict[key] for key in tcdict]
     
+    # if(drop):
+    #     mi = mi.drop_duplicates(keep='last')
+    # print(mi)
     df = pd.DataFrame(df_array, index = mi)
+
     return df
 
 def tdms2df(filepath):
@@ -73,7 +81,7 @@ def tdms2df(filepath):
                     length = newlength
                     longestchannel = channel
         timedata = longestchannel.time_track(absolute_time = True) 
-        # df = df.set_index(timedata)
+        df = df.set_index(timedata)
 
     return df
 

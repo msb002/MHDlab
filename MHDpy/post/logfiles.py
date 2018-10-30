@@ -8,6 +8,8 @@ from ._tools import _cut_channel, _cut_datetime_channel
 from nptdms import TdmsFile as TF
 from nptdms import TdmsWriter, RootObject
 import os
+import mhdpy.timefuncs as timefuncs
+import numpy as np
 
 
 # Mid level post processing (processes a specific type of file)
@@ -17,13 +19,15 @@ def cut_log_file(fileinpaths, times, fileoutpaths_list, **kwargs):
     
     This function assumes that the channels are waveforms.
     """
-    for i in range(len(fileinpaths)):
-        fileinpath = fileinpaths[i]
+
+    for i, fileinpath in enumerate(fileinpaths):
+
         fileoutpaths = fileoutpaths_list[i]
         tdmsfile = TF(fileinpath)
         for j in range(len(times)):
             time1 = times[j][0]
             time2 = times[j][1]
+
             fileoutpath = fileoutpaths[j]
             
             direc = os.path.split(fileoutpath)[0]
