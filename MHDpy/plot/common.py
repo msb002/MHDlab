@@ -34,7 +34,7 @@ def plotgrid(dfs, sel_col = None, squash = False, sharey = True, sharex = True, 
                 dfs_i = dfs.loc[col]
 
                 if row in dfs_i.index:
-                    trace = dfs_i.loc[row][0]
+                    trace = dfs_i.loc[row]#[0]
                     if(sel_col != None):
                         trace = trace[trace.columns[sel_col]]
                     ax.plot(trace, label = (col,row))

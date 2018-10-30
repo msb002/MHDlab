@@ -4,7 +4,7 @@ import os
 import nptdms
 import re 
 import pandas as pd
-
+import numpy as np
 
 def create_tcdict(filepaths, loadfn, prefixes = None ):
     """takes in a list of files and a load function, and creates a dict of a df for each file. If a prefix is passed, that is removed from the filename (typically the instrument name so only the test case is left as the dict key)"""
@@ -39,18 +39,23 @@ def tcdict2mi(tcdict,regexs,drop = True):
     regexs['Measnum'] = '(\d+)$'
 
     mi_array = []
-    for rekey in regexs:
-        regex = regexs[rekey]
+    tcdict_trim = tcdict.copy()
+    for tckey in tcdict:
         i_array = []
-        for tckey in tcdict:
+        for rekey in regexs:
+            regex = regexs[rekey]
             m  = re.search(regex,tckey)
             if (m):
                 i_array.append(float(m.groups(1)[0]))
-        mi_array.append(i_array)
-
+        if(len(i_array) == len(regexs)):
+            mi_array.append(i_array)
+        else:
+            del tcdict_trim[tckey]
+                
+    mi_array = np.array(mi_array).T.tolist()
     mi = pd.MultiIndex.from_arrays(mi_array , names = regexs.keys())
 
-    df_array = [tcdict[key] for key in tcdict]
+    df_array = [tcdict_trim[key] for key in tcdict_trim]
     
     # if(drop):
     #     mi = mi.drop_duplicates(keep='last')
