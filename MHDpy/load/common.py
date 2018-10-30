@@ -6,7 +6,7 @@ import re
 import pandas as pd
 
 
-def create_tcdict(filepaths, loadfn, prefix = None ):
+def create_tcdict(filepaths, loadfn, prefixes = None ):
     """takes in a list of files and a load function, and creates a dict of a df for each file. If a prefix is passed, that is removed from the filename (typically the instrument name so only the test case is left as the dict key)"""
 
     dfs = {}
@@ -15,12 +15,15 @@ def create_tcdict(filepaths, loadfn, prefix = None ):
         filename = os.path.split(filepath)[1]
         testcase = os.path.splitext(filename)[0]
 
-        if prefix != None:
-            testcase = _remove_prefix(testcase,prefix)
+        if prefixes != None:
+            for prefix in prefixes:
+                if prefix in testcase:
+                    testcase = _remove_prefix(testcase,prefix)
 
+        
         df =  loadfn(filepath)
         dfs[testcase] =df
-    
+
     return dfs
 
 
@@ -70,7 +73,7 @@ def tdms2df(filepath):
                     length = newlength
                     longestchannel = channel
         timedata = longestchannel.time_track(absolute_time = True) 
-        df = df.set_index(timedata)
+        # df = df.set_index(timedata)
 
     return df
 
