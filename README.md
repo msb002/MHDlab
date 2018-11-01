@@ -5,13 +5,14 @@ MHDLab is a collection of labview and python programs used for the data aquisiti
 # Installation
 
 ## Prerequisites
-The MHDLab software utilizes Labview and Python. The following software is required:
+The MHDLab software utilizes Labview and Python. Most of this software should already be installed on the main data acquisition computer, but you should double check that each program is acessible by going through this list. 
 
-### Labview
-* Labview 2018
-* Daqmx 18.1
+1. Labview 2018 must be installed. Note that the group licence can be determined by opening NI license manger. 
+2. [Daqmx 18.1] (http://www.ni.com/download/ni-daqmx-18.1/7702/en/)
+
+3. Next, use the VI package manager (installed with labview) to install the following packages
 * Enthought Python integration toolkit - Standard Edition v1.2.1.79
-* OpenG Labview Toolkit (Only required for TDMS concatenating at the moment)
+* OpenG Labview Toolkit. Note: Only required for TDMS concatenating at the moment, and is not critical for data acquisition.
 
 ### Python 
 * Anaconda 5.2 (Make sure to install the Python 3 version) 
