@@ -378,7 +378,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         if timetype == 0: 
             #Parse all files based on internal time (graph) 
             times = [(self.time1,self.time2)]
-        elif timetype == 1 or timetype == 2: 
+        elif timetype == 1 or timetype == 2:
             #Parse each file based on event log
             if timetype == 1:
                 cut = True
