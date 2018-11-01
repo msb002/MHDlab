@@ -39,9 +39,11 @@ Next, you need to clone the remote (github) repository onto your computer.
 Once you have added any code or made changes, you should should get some basic knowledge of how to use git to stage and commit changes so those codes can be shared with the rest of the group. I recommend the [Git Book](https://git-scm.com/book/en/v2) 
 
 ## Setup 
-Once you have a folder setup, run setup.bat. This should do two things: 1) run setup.py in python, which will install the 'MHDpy' python module. 
+Once you have a folder setup, run setup.bat. This should do two things: 
 
-Currently this is installed in 'develop' mode which allows for changes to the MHDpy module to show up without having to reinstall. 2) Runs Setup_GlobalVariable.vi, which will update the Labview global variable with the correct path to your repository. 
+1) run setup.py in python, which will install the 'MHDpy' python module. Currently this is installed in 'develop' mode which allows for changes to the MHDpy module to show up without having to reinstall.
+
+2) Runs Setup_GlobalVariable.vi, which will update the Labview global variable with the correct path to your repository. 
 
 # Using MHDLab
 
