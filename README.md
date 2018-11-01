@@ -43,7 +43,7 @@ Once you have a folder setup, run setup.bat.
 
 setup.bat does two things, some information about what it does in case there are errors: 
 
-* runs setup.py in python, which will install the 'MHDpy' python module. Currently this is installed in 'develop' mode which allows for changes to the MHDpy module to show up without having to reinstall.
+* runs setup.py in python, which will install the mhdpy python package. Currently this is installed in 'develop' mode which allows for changes to the MHDpy module to show up without having to reinstall.
 
 * Runs `Common SubVis\Setup_GlobalVariable.vi`, which will update the repository path variable within `GlobalVariables.vi`
 
