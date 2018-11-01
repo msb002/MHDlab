@@ -1,5 +1,5 @@
 # MHDlab
-A library of labview programs for the data aquisition equipment in the MHD Lab at NETL. 
+MHDLab is a collection of labview and python programs used for the data aquisition and analysis in the MHD Lab at NETL. 
 
 
 # Installation
