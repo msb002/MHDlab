@@ -1,35 +1,39 @@
 # MHDlab
 MHDlab labview library
 
-A library of labview programs for the data aquisition equipment in the MHD Lab at NETL. There is a VI corresponding to each instrument that can be run independently, or called alongside other VIs by a 'main' master program. The main VI programatically calls the instrument VIs and synchronizes their outputs into a TDMS format file.
+A library of labview programs for the data aquisition equipment in the MHD Lab at NETL. 
 
-These are the instruments being recorded:
 
-### Spectrometers
+# Prerequisites
+The MHDLab software utilizes Labview and Python. The following software is required:
 
-  Aquires data from Oceanoptics Flame and NIR-512 spectrometers as well as switching a OceanOptics Multiplexer
-  
-### Motor Control
+### Labview
+* Labview 2018
+* Daqmx 18.1
+* Enthought Python integration toolkit - Standard Edition v1.2.1.79
+* OpenG Labview Toolkit (Only required for TDMS concatenating at the moment)
 
-  Controls a Galil 4-axis PLC motor system
-  
-### Power meters
+### Python 
+* Anaconda 5.2 (Make sure to install the Python 3 version) 
 
-  Aquires data from the data from Ophir pulse energy meters
-  
-### Sensors
+# Installation
 
-  Aquires data from a NI PXI system (VI is generalized for any DAQmx tast) and Alicat flow meters
-  
-### Keithley
+## Downloading the repository
+To use the software, you can simply download this repository using the clone or download button on the [main page of the repository](https://github.com/aspitarl/MHDlab). Then unzip the contents and follow the setup instructions below. 
 
-  Aqires data from Keithley 2812 and 6221 pair
-  
-### Lightfield
+For any extended use of the software that will include the addition of new Vis and analysis scripts, it is preferable that researchers utilize Git, so that the new code can be easily integrated into this software library. 
 
-  Operate PI-max4 cameras and ISOplane spectrograph by controlling Lightfield through Labview.
-  
-### Image Analysis
+1. Download and install Git [here](https://git-scm.com/downloads). 
+2. Then create a Git folder in the location of your choice. This typically is in the home directory (C:\Users\yourusername\Git)
+3. When in that folder right click and select "Git Bash Here"
+4. In the command prompt type `git clone https://github.com/aspitarl/MHDlab`
+5. type `cd MHDlab` to have git bash enter the new directory.
 
-  Use labview to process images for data analysis.
+At this stage you are set to modify and use the software, but you should should get some basic knowledge of how to use git to stage and commit changes. I recommend the [Git Book](https://git-scm.com/book/en/v2) 
+
+## Setup 
+Once you have a folder setup, run setup.bat. This should do two things: 1) run setup.py in python, which will install the 'MHDpy' python module. Currently this is installed in 'develop' mode which allows for changes to the MHDpy module to show up without having to reinstall. 2) Runs Setup_GlobalVariable.vi, which will update the Labview global variable with the correct path to your repository. 
+
+
+
 
