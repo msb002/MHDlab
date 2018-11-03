@@ -320,8 +320,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 if args.__contains__('times') or args.__contains__('fileoutpaths_list'):
                     #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
                     times = self.gen_times()
-                    timetype = self.combo_times.currentIndex()
-                    if(isinternalfile and timetype == 0): #if parsing an internal file with the markers, you can use custom filenames
+                    timetype = self.combo_times.currentText()
+                    if(isinternalfile and timetype == "Markers"): #if parsing an internal file with the markers, you can use custom filenames
                         fileoutpaths_list = [[os.path.join(self.datefolder, self.folderEdit.text(), self.filenameEdit.text()) + '.tdms']]
                     else:
                         fileoutpaths_list = self.gen_fileout(fileinpaths,times)
@@ -352,15 +352,15 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
         if timetype == None:
-            timetype = self.combo_times.currentIndex()
+            timetype = self.combo_times.currentText()
         
         times = []
-        if timetype == 0: 
+        if timetype == 'Markers': 
             #Parse all files based on internal time (graph) 
             times = [(self.time1,self.time2)]
-        elif timetype == 1 or timetype == 2:
+        elif timetype == "Eventlog in Time Window" or timetype == "Entire Eventlog":
             #Parse each file based on event log
-            if timetype == 1:
+            if timetype == "Eventlog in Time Window":
                 cuttimes = [self.time1,self.time2]
             else:
                 cuttimes = None
@@ -371,7 +371,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
             #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
             times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
-        elif timetype == 3:
+        elif timetype == "PIMAX1 Savetimes":
             saveevents = el.geteventinfo(self.jsonfile,eventstr='VISavingChange')
             camsaveevents = []
             timeslist = []
