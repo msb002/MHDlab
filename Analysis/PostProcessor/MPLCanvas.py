@@ -142,7 +142,8 @@ class MyDynamicMplCanvas(FigureCanvas):
         #updates the figure with a new channel. 
 
         timearray = channel.time_track(absolute_time = True)
-        timearray = list(map(lambda x: timefuncs.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        timearray = timearray.astype('O')
+        # timearray = list(map(lambda x: timefuncs.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
         data = channel.data
 
         if self.dataline in self.axes.lines:
