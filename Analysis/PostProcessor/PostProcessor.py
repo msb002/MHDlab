@@ -24,6 +24,7 @@ from MPLCanvas import MyDynamicMplCanvas
 
 import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
+import mhdpy.eventlog as el
 
 
 
@@ -205,7 +206,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def display_eventlog(self):
         """refresh the cut eventlog in the text display and update the folder and filename inputs"""
         
-        self.eventlog_cut = self.geteventinfo(cut = True)
+        self.eventlog_cut = el.geteventinfo(self.jsonfile,cuttimes = [self.time1,self.time2])
         if self.eventlog_cut != self.eventlog_latest:
             self.eventlog_latest = self.eventlog_cut
 
@@ -219,7 +220,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.text_events.setText(string)
             if(self.Logfiletdms != None):
                 basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-                folder, filename = self.gen_fileinfo(self.event_before(self.time1))
+                folder, filename = el.gen_fileinfo(el.event_before(self.jsonfile, self.time1))
                 filename = basefilename + filename
                 self.folderEdit.setText(folder)    
                 self.filenameEdit.setText(filename)
@@ -291,42 +292,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.refresh()      
             self.plotwidget.update_eventticks()
         
-    ### Interacting with eventlog, perhaps move to module###
-    def geteventinfo(self, cut = False ,eventstr = None):
-        """pull the testcase info from the json file, only those after time1 if cut is true"""
-        tci = {}
-        for event in self.jsonfile:
-            if (event['event']['type'] == eventstr) or (eventstr == None):
-                time = datetime.datetime.utcfromtimestamp(event['dt'])
-                time = time.replace(tzinfo=pytz.utc)
-                tci[time] = event['event']['event info']
-
-        #pull only those events before time1 if cut is true
-        if(cut):
-            tci_cut = {}
-            for time, event in tci.items():
-                if((time>self.time1) and (time<self.time2)): 
-                    tci_cut[time] = event
-            tci = tci_cut
-
-        return tci
-
-    def event_before(self,time_cut):
-        """returns the event before time_cut"""
-        tci = self.geteventinfo(False,'TestCaseInfoChange')
-        tci_cut = []
-        for time, event in tci.items():
-            if(time<=time_cut): 
-                tci_cut.append(event)
-        return tci_cut[-1]
-
-    def gen_fileinfo(self,tci_event):
-        """Takes in a test case and return a destination folder and filename"""
-        folder = tci_event['project'] + '\\'+ tci_event['subfolder']
-        filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
-        return folder, filename
-
-
     ###Running post processing routines###
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
@@ -387,7 +352,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
         if timetype == None:
-            timetype = self.combo_times.currentIndex() 
+            timetype = self.combo_times.currentIndex()
         
         times = []
         if timetype == 0: 
@@ -396,10 +361,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         elif timetype == 1 or timetype == 2:
             #Parse each file based on event log
             if timetype == 1:
-                cut = True
+                cuttimes = [self.time1,self.time2]
             else:
-                cut = False
-            tci = self.geteventinfo(cut = cut,eventstr='TestCaseInfoChange')
+                cuttimes = None
+            tci = el.geteventinfo(self.jsonfile,cuttimes = cuttimes,eventstr='TestCaseInfoChange')
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
@@ -407,7 +372,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
             times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
         elif timetype == 3:
-            saveevents = self.geteventinfo(cut = False,eventstr='VISavingChange')
+            saveevents = el.geteventinfo(self.jsonfile,eventstr='VISavingChange')
             camsaveevents = []
             timeslist = []
             for time, saveevent in saveevents.items():
@@ -429,16 +394,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
             fileoutpaths= []
             for timepair in times:
-                folder, filename = self.gen_fileinfo(self.event_before(timepair[0]))
+                folder, filename = el.gen_fileinfo(el.event_before(self.jsonfile,timepair[0]))
                 fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
             fileoutpaths_list.append(fileoutpaths)
 
         return fileoutpaths_list
     
-  
-
-
-
 def reload_package(package):
     """
     reloads a package and all subpackages
