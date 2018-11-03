@@ -35,6 +35,7 @@ progfolder = os.path.dirname(sys.argv[0])
 class Ui_MainWindow(layout.Ui_MainWindow):
     """Main window of the post processor. Inherits from the MainWindow class within layout.py"""
 
+    ###Initialization###
     def __init__(self):
         self.channel = None # replace in __init__
         self.eventlog_latest = None #used so eventlog is only updated if new events are in time window
@@ -43,7 +44,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
-            print('hello')
             with open(self.settingspath, 'w') as filewrite:
                 json.dump({},filewrite)
         
@@ -53,12 +53,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             except json.decoder.JSONDecodeError:
                 print('Could not read settings')
                 self.ppsettings = {}
-                #json.dump({},fileread)
 
         if not 'defaultpath' in self.ppsettings:
             self.ppsettings['defaultpath'] = 'C:\\Labview Test Data'
-    
-
     
     def link_buttons(self):
         """links internal function to the various widgets in the main window"""
@@ -83,6 +80,23 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.refresh_modulelist()
         self.refresh_time()
         
+    ###Widget updating###
+
+    def refresh(self):
+        """full refresh of everything"""
+        if(self.Logfiletdms != None):
+            selgroup = self.selectGroup.currentRow()
+            channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+            selchannel = self.selectChannel.currentRow()
+
+            if (self.channel == None) or (self.channel != channels[selchannel]):
+                self.channel = channels[selchannel]
+                self.plotwidget.update_data(self.channel)
+        
+            
+            self.update_stats(self.channel)
+        self.refresh_time()
+        self.display_eventlog()
 
     def refresh_modulelist(self):
         """Pull public post processing modules from mhd.post and list in the module combo box"""
@@ -124,12 +138,94 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.text_docstring.insertPlainText(docstring)
 
+    def refresh_time(self):
+        """pull the time from the inputs and update the gray lines on the display"""
+        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
+        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
+        
+        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
+        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
+        
+        self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
+        self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
+        
+        self.plotwidget.draw()
+
+    def update_stats(self,channel):
+        """update the statistics calculations and display"""
+        idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
+        idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
+        if len(channel.data[idx1:idx2]) > 0:
+            self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
+            self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
+            self.t_skew.setText('{0:.3f}'.format(stats.skew(channel.data[idx1:idx2])))
+            self.t_std.setText('{0:.3f}'.format(np.std(channel.data[idx1:idx2])))
+            self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
+            self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
 
     def reloadppr(self):
         """reloads the mhdpy package and updates the module list"""
         reload_package(pp)
         self.refresh_modulelist()
 
+    def update_channel_display(self):
+        """Updates the channel list to display channels in selected group"""
+        selgroup = self.selectGroup.currentRow()
+        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
+        channelnamelist = []
+        for channel in channels:
+            channelnamelist.append(channel.channel)
+        self.selectChannel.clear()
+        self.selectChannel.insertItems(0,channelnamelist)
+        self.selectChannel.setCurrentRow(0)
+
+        self.timearray = channels[0].time_track(absolute_time = True)
+        self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
+        timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
+        timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
+
+        self.update_time_inputs(timestamp1,timestamp2)
+
+    def update_time_inputs(self, timestamp1, timestamp2):
+        #update_time_displays : updates the time inputs to max and min of channel
+
+        startdatetime = QtCore.QDateTime()
+        startdatetime.setTime_t(timestamp1)
+        enddatetime = QtCore.QDateTime()
+        enddatetime.setTime_t(timestamp2)
+
+        #update the time selectors, but don't signal to refresh
+        self.startTimeInput.blockSignals(True)
+        self.endTimeInput.blockSignals(True)
+        self.startTimeInput.setDateTime(startdatetime)
+        self.endTimeInput.setDateTime(enddatetime)
+        self.startTimeInput.blockSignals(False)
+        self.endTimeInput.blockSignals(False)
+
+    def display_eventlog(self):
+        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
+        
+        self.eventlog_cut = self.geteventinfo(cut = True)
+        if self.eventlog_cut != self.eventlog_latest:
+            self.eventlog_latest = self.eventlog_cut
+
+            string = ''
+
+            for time, event in self.eventlog_cut.items():
+                string += time.strftime('%H:%M:%S') + ' - '
+                string += json.dumps(event)
+                string += '\r\n'
+            
+            self.text_events.setText(string)
+            if(self.Logfiletdms != None):
+                basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
+                folder, filename = self.gen_fileinfo(self.event_before(self.time1))
+                filename = basefilename + filename
+                self.folderEdit.setText(folder)    
+                self.filenameEdit.setText(filename)
+
+
+    ###Loading of files###
     def open_eventlog(self, filepath= 0):
         if(filepath == 0):
             paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', self.ppsettings['defaultpath'])
@@ -194,59 +290,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             
             self.refresh()      
             self.plotwidget.update_eventticks()
-
-    def update_channel_display(self):
-        """Updates the channel list to display channels in selected group"""
-        selgroup = self.selectGroup.currentRow()
-        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-        channelnamelist = []
-        for channel in channels:
-            channelnamelist.append(channel.channel)
-        self.selectChannel.clear()
-        self.selectChannel.insertItems(0,channelnamelist)
-        self.selectChannel.setCurrentRow(0)
-
-        self.timearray = channels[0].time_track(absolute_time = True)
-        self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
-        timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
-        timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
-
-        self.update_time_inputs(timestamp1,timestamp2)
-
-    def update_time_inputs(self, timestamp1, timestamp2):
-        #update_time_displays : updates the time inputs to max and min of channel
-
-        startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(timestamp1)
-        enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(timestamp2)
-
-        #update the time selectors, but don't signal to refresh
-        self.startTimeInput.blockSignals(True)
-        self.endTimeInput.blockSignals(True)
-        self.startTimeInput.setDateTime(startdatetime)
-        self.endTimeInput.setDateTime(enddatetime)
-        self.startTimeInput.blockSignals(False)
-        self.endTimeInput.blockSignals(False)
-
-    def refresh(self):
-        """full refresh of everything"""
-        if(self.Logfiletdms != None):
-            selgroup = self.selectGroup.currentRow()
-            channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-            selchannel = self.selectChannel.currentRow()
-
-            if (self.channel == None) or (self.channel != channels[selchannel]):
-                self.channel = channels[selchannel]
-                self.plotwidget.update_data(self.channel)
         
-            
-            self.update_stats(self.channel)
-        self.refresh_time()
-        self.display_eventlog()
-        
-        
-
+    ### Interacting with eventlog, perhaps move to module###
     def geteventinfo(self, cut = False ,eventstr = None):
         """pull the testcase info from the json file, only those after time1 if cut is true"""
         tci = {}
@@ -266,28 +311,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return tci
 
-    def display_eventlog(self):
-        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
-        
-        self.eventlog_cut = self.geteventinfo(cut = True)
-        if self.eventlog_cut != self.eventlog_latest:
-            self.eventlog_latest = self.eventlog_cut
-
-            string = ''
-
-            for time, event in self.eventlog_cut.items():
-                string += time.strftime('%H:%M:%S') + ' - '
-                string += json.dumps(event)
-                string += '\r\n'
-            
-            self.text_events.setText(string)
-            if(self.Logfiletdms != None):
-                basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-                folder, filename = self.gen_fileinfo(self.event_before(self.time1))
-                filename = basefilename + filename
-                self.folderEdit.setText(folder)    
-                self.filenameEdit.setText(filename)
-
     def event_before(self,time_cut):
         """returns the event before time_cut"""
         tci = self.geteventinfo(False,'TestCaseInfoChange')
@@ -297,38 +320,14 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 tci_cut.append(event)
         return tci_cut[-1]
 
-
-    def refresh_time(self):
-        """pull the time from the inputs and update the gray lines on the display"""
-        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
-        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
-        
-        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
-        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
-        
-        self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
-        self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
-        
-        self.plotwidget.draw()
-
-    def update_stats(self,channel):
-        """update the statistics calculations and display"""
-        idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
-        idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
-        if len(channel.data[idx1:idx2]) > 0:
-            self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
-            self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
-            self.t_skew.setText('{0:.3f}'.format(stats.skew(channel.data[idx1:idx2])))
-            self.t_std.setText('{0:.3f}'.format(np.std(channel.data[idx1:idx2])))
-            self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
-            self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
-
     def gen_fileinfo(self,tci_event):
         """Takes in a test case and return a destination folder and filename"""
         folder = tci_event['project'] + '\\'+ tci_event['subfolder']
         filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
         return folder, filename
 
+
+    ###Running post processing routines###
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
         index = self.combo_function.currentIndex()
@@ -368,7 +367,23 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             
             pp_function(**kwargs) # need to figure how to to remove this redundant call and also allow for abort on empty fileinpaths
             
+    def cutinternalinloc(self):
+        """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
+        pp_function = pp.logfiles.cut_log_file
+        fileinpaths = [self.logfilepath]
+        times = self.gen_times(timetype = 0)
 
+        folder = os.path.split(self.logfilepath)[0]
+
+        basefilename = os.path.splitext(os.path.split(fileinpaths[0])[1])[0]
+
+        fileoutpaths_list = [[os.path.join(folder,basefilename+'_cut.tdms')]]
+
+        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+        pp_function(**kwargs)      
+
+    ###Post processing utilitiy###
     def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
         if timetype == None:
@@ -420,22 +435,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         return fileoutpaths_list
     
-
-    def cutinternalinloc(self):
-        """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
-        pp_function = pp.logfiles.cut_log_file
-        fileinpaths = [self.logfilepath]
-        times = self.gen_times(timetype = 0)
-
-        folder = os.path.split(self.logfilepath)[0]
-
-        basefilename = os.path.splitext(os.path.split(fileinpaths[0])[1])[0]
-
-        fileoutpaths_list = [[os.path.join(folder,basefilename+'_cut.tdms')]]
-
-        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
-        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
-        pp_function(**kwargs)        
+  
 
 
 
