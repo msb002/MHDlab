@@ -220,7 +220,10 @@ class MyDynamicMplCanvas(FigureCanvas):
         
         if(option == 'sel'):
             #vertical line selection
-            self.axes.set_xlim(self.timeline1.get_xdata()[0],self.timeline2.get_xdata()[0])
+            mintime = self.timeline1.get_xdata()[0]
+            maxtime = self.timeline2.get_xdata()[0]
+            padtime = (maxtime-mintime)/10
+            self.axes.set_xlim(mintime - padtime,maxtime + padtime)
         if(option == 'all'):
             #whole window
             mintime = min(timearray)
@@ -244,11 +247,10 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.draw()
 
 def dateformatter(value, tick_number):
-    #value is liek 70000, and can't figure out why
+    
     time = mpl.dates.num2date(value)
     localtz = tzlocal.get_localzone()
     time = time.replace(tzinfo = pytz.utc).astimezone(localtz)
     string = time.strftime('%H:%M:%S') + ' - '
     
-    # value = value.replace(tzinfo=pytz.utc).astimezone(localtz)
     return string
