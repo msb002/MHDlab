@@ -138,7 +138,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
-            self.mainwindow.refresh()
+            self.mainwindow.update_fig()
             self.selectedline.figure.canvas.draw()
             self.selectedline = None
             

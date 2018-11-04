@@ -58,7 +58,7 @@
      <enum>Qt::TimeZone</enum>
     </property>
    </widget>
-   <widget class="QPushButton" name="btn_refresh">
+   <widget class="QPushButton" name="btn_update_fig">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -68,7 +68,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Refresh</string>
+     <string>Update Fig</string>
     </property>
    </widget>
    <widget class="QTextBrowser" name="text_events">

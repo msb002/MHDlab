@@ -26,12 +26,9 @@ import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
 import mhdpy.eventlog as el
 
-
-
-progname = os.path.basename(sys.argv[0])
-progversion = "0.1"
-
+progname = os.path.basename(sys.argv[0]) #What is this?
 progfolder = os.path.dirname(sys.argv[0])
+progversion = "0.1"
 
 class Ui_MainWindow(layout.Ui_MainWindow):
     """Main window of the post processor. Inherits from the MainWindow class within layout.py"""
@@ -63,9 +60,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(self.mplframe.geometry())
         self.plotwidget.setObjectName("widget")
-        self.startTimeInput.dateTimeChanged.connect(self.refresh)
-        self.endTimeInput.dateTimeChanged.connect(self.refresh)
-        self.btn_refresh.clicked.connect(self.refresh)
+        self.startTimeInput.dateTimeChanged.connect(self.update_fig)
+        self.endTimeInput.dateTimeChanged.connect(self.update_fig)
+        self.btn_update_fig.clicked.connect(self.update_fig)
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
@@ -74,20 +71,18 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.actionOpen_Eventlog.triggered.connect(self.open_eventlog)
         self.actionReload_ppr.triggered.connect(self.reloadppr)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
-        self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
-        self.combo_function.currentIndexChanged.connect(self.refresh_docstring)
+        self.combo_module.currentIndexChanged.connect(self.update_functionlist)
+        self.combo_function.currentIndexChanged.connect(self.update_docstring)
         self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
         self.select_eventtickdisplay.itemClicked.connect(self.plotwidget.update_eventticks)
 
-        self.refresh_modulelist()
-        self.refresh_time()
+        self.update_modulelist()
+        self.update_vlines()
         
     ###Widget updating###
 
-        
-
-    def refresh(self):
-        """full refresh of everything"""
+    def update_fig(self):
+        """Update the figure"""
         if(self.Logfiletdms != None):
             selgroup = self.selectGroup.currentRow()
             channels = self.Logfiletdms.group_channels(self.groups[selgroup])
@@ -96,14 +91,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             if (self.channel == None) or (self.channel != channels[selchannel]):
                 self.channel = channels[selchannel]
                 self.plotwidget.update_data(self.channel)
-        
-            
+                    
             self.update_stats(self.channel)
-        self.refresh_time()
-        self.display_eventlog()
+        self.update_vlines()
+        self.update_eventlog_display()
         
-
-    def refresh_modulelist(self):
+    def update_modulelist(self):
         """Pull public post processing modules from mhd.post and list in the module combo box"""
         self.combo_module.clear()
 
@@ -116,9 +109,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 moduleliststr.extend([module[0]])
         
         self.combo_module.insertItems(0,moduleliststr)
-        self.refresh_functionlist()
+        self.update_functionlist()
 
-    def refresh_functionlist(self):
+    def update_functionlist(self):
         """Obtain a list of public functions in the selected module and list them"""
         self.combo_function.clear()
         self.functionlist = []
@@ -131,9 +124,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         functionliststr.extend(func[0] for func in members if func[0][0] != '_')
 
         self.combo_function.insertItems(0,functionliststr)
-        self.refresh_docstring()
+        self.update_docstring()
 
-    def refresh_docstring(self):
+    def update_docstring(self):
         """Updates the docstring display for selected post processing function"""
         self.text_docstring.clear()
         function = self.functionlist[self.combo_function.currentIndex()]
@@ -146,7 +139,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.text_docstring.insertPlainText(docstring)
 
-    def refresh_time(self):
+    def update_vlines(self):
         """pull the time from the inputs and update the gray lines on the display"""
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
         self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
@@ -176,11 +169,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     def reloadppr(self):
         """reloads the mhdpy package and updates the module list"""
         reload_package(pp)
-        self.refresh_modulelist()
+        self.update_modulelist()
 
     def update_channel_display(self):
         """Updates the channel list to display channels in selected group"""
         selgroup = self.selectGroup.currentRow()
+
         channels = self.Logfiletdms.group_channels(self.groups[selgroup])
         channelnamelist = []
         for channel in channels:
@@ -191,9 +185,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.timearray = channels[0].time_track(absolute_time = True)
         self.timearray = self.timearray.astype('M8[us]')
-        # self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
-        # self.timearray = self.timearray.astype('M8[s]')
-        # self.timearray = list(map(lambda x: x.replace(tzinfo=pytz.utc),self.timearray))
         
         timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
         timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
@@ -218,7 +209,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         enddatetime = QtCore.QDateTime()
         enddatetime.setTime_t(timestamp2)
 
-        #update the time selectors, but don't signal to refresh
+        #update the time selectors, but don't signal to update_fig
         self.startTimeInput.blockSignals(True)
         self.endTimeInput.blockSignals(True)
         self.startTimeInput.setDateTime(startdatetime)
@@ -226,8 +217,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.startTimeInput.blockSignals(False)
         self.endTimeInput.blockSignals(False)
 
-    def display_eventlog(self):
-        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
+    def update_eventlog_display(self):
+        """update the cut eventlog in the text display and update the folder and filename inputs"""
         
         self.eventlog_cut = el.geteventinfo(self.jsonfile,cuttimes = [self.time1,self.time2])
         if self.eventlog_cut != self.eventlog_latest:
@@ -253,13 +244,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.folderEdit.setText(folder)    
                 self.filenameEdit.setText(filename)
 
-
     ###Loading of files###
 
-    def newfile_refresh(self):
+    def newfile_update(self):
         self.update_eventticklist()
         self.plotwidget.update_eventticks()
-        self.refresh()
+        self.update_fig()
 
     def open_eventlog(self, filepath= 0):
         if(filepath == 0):
@@ -272,12 +262,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.jsonfile = json.load(file_read)
             folder = os.path.split(filepath)[0]
             self.datefolder = folder
-
         
         timestamp1 = self.jsonfile[0]['dt']
         timestamp2 = self.jsonfile[-1]['dt']
         self.update_time_inputs(timestamp1,timestamp2)
-        self.newfile_refresh()
+        self.newfile_update()
 
     def open_tdmsfile(self, filepath= 0):
         """
@@ -319,7 +308,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.selectGroup.setCurrentRow(0)
             
             self.update_channel_display()
-            self.newfile_refresh()
+            self.newfile_update()
         
     ###Running post processing routines###
     def run_routine(self):
@@ -468,6 +457,6 @@ MainWindow.show()
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 
-#ui.refresh()
+#ui.update_fig()
 
 sys.exit(app.exec_())
