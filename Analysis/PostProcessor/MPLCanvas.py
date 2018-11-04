@@ -9,6 +9,7 @@ import sys
 import pytz
 import tzlocal
 import datetime
+import numpy as np
 from PyQt5 import QtCore, QtWidgets
 
 import matplotlib as mpl
@@ -70,7 +71,8 @@ class MyDynamicMplCanvas(FigureCanvas):
 
             self.selectedline.set_color('g')
             x0 = self.selectedline.get_xdata()[0]
-            press = mpl.dates.num2date(event.xdata)
+            eventxdata = event.xdata
+            press = np.datetime64(mpl.dates.num2date(eventxdata))
             self.press = x0, press
             clickedonartist = True
         
@@ -113,7 +115,7 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         #calculate new position of the vertical line and draw it. 
         x0, xpress = self.press
-        dx = mpl.dates.num2date(event.xdata) - xpress
+        dx = np.datetime64(mpl.dates.num2date(event.xdata)) - xpress
         newtime = x0 + dx
         self.selectedline.set_xdata([newtime,newtime])
         self.selectedline.figure.canvas.draw()
@@ -124,10 +126,10 @@ class MyDynamicMplCanvas(FigureCanvas):
             #if letting go of a line, update the relevant time display.
 
             x0, xpress = self.press
-            dx = mpl.dates.num2date(event.xdata) - xpress
+            dx = np.datetime64(mpl.dates.num2date(event.xdata)) - xpress
             newtime = x0 + dx
             startdatetime = QtCore.QDateTime()
-            startdatetime.setTime_t(newtime.timestamp())
+            startdatetime.setTime_t(timefuncs.np64_to_unix(newtime))
             if self.selectedline == self.timeline1:
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
@@ -142,8 +144,9 @@ class MyDynamicMplCanvas(FigureCanvas):
         #updates the figure with a new channel. 
 
         timearray = channel.time_track(absolute_time = True)
-        timearray = timearray.astype('O')
-        # timearray = list(map(lambda x: timefuncs.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
+        timearray = timearray.astype('M8[us]').tolist()#.astype(datetime.datetime)
+        localtz = tzlocal.get_localzone()
+        # timearray = list(map(lambda x: x.replace(tzinfo=pytz.utc).astimezone(localtz),timearray))
         data = channel.data
 
         if self.dataline in self.axes.lines:

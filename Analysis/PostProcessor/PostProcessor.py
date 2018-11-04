@@ -143,9 +143,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         """pull the time from the inputs and update the gray lines on the display"""
         self.time1 = self.startTimeInput.dateTime().toPyDateTime()
         self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
+        self.time1 = np.datetime64(self.time1).astype('M8[us]')
         
         self.time2 = self.endTimeInput.dateTime().toPyDateTime()
         self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
+        self.time2 = np.datetime64(self.time2).astype('M8[us]')
         
         self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
         self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
@@ -154,8 +156,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
     def update_stats(self,channel):
         """update the statistics calculations and display"""
-        idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
-        idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
+        idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+        idx2 = timefuncs.nearest_timeind(self.timearray,self.time2)
         if len(channel.data[idx1:idx2]) > 0:
             self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
             self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
@@ -181,7 +183,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.selectChannel.setCurrentRow(0)
 
         self.timearray = channels[0].time_track(absolute_time = True)
-        self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
+        self.timearray = self.timearray.astype('M8[us]')
+        # self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
+        # self.timearray = self.timearray.astype('M8[s]')
+        # self.timearray = list(map(lambda x: x.replace(tzinfo=pytz.utc),self.timearray))
+        
         timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
         timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
 
@@ -213,6 +219,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             string = ''
 
             for time, event in self.eventlog_cut.items():
+                time = time.astype(datetime.datetime).replace(tzinfo = None).astimezone(pytz.utc)
                 string += time.strftime('%H:%M:%S') + ' - '
                 string += json.dumps(event)
                 string += '\r\n'
@@ -220,10 +227,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.text_events.setText(string)
             if(self.Logfiletdms != None):
                 basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-                folder, filename = el.gen_fileinfo(el.event_before(self.jsonfile, self.time1))
-                filename = basefilename + filename
-                self.folderEdit.setText(folder)    
-                self.filenameEdit.setText(filename)
+                event_before = el.event_before(self.jsonfile, self.time1)
+                if event_before != None:
+                    folder, filename = el.gen_fileinfo(event_before)
+                    filename = basefilename + filename
+                    self.folderEdit.setText(folder)    
+                    self.filenameEdit.setText(filename)
 
 
     ###Loading of files###
@@ -368,9 +377,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
-
+            
             #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
-            times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
+            times.append((timelist[-1],timelist[-1] + np.timedelta64(1000))) 
         elif timetype == "PIMAX1 Savetimes":
             saveevents = el.geteventinfo(self.jsonfile,eventstr='VISavingChange')
             camsaveevents = []
