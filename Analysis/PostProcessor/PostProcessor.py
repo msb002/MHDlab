@@ -231,8 +231,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 if event_before != None:
                     folder, filename = el.gen_fileinfo(event_before)
                     filename = basefilename + filename
-                    self.folderEdit.setText(folder)    
-                    self.filenameEdit.setText(filename)
+                else:
+                    folder, filename = "",""
+                self.folderEdit.setText(folder)    
+                self.filenameEdit.setText(filename)
 
 
     ###Loading of files###

@@ -15,6 +15,9 @@ from PyQt5 import QtCore, QtWidgets
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.ticker import ScalarFormatter, FormatStrFormatter, FuncFormatter
+
+
 
 import mhdpy.timefuncs as timefuncs
 
@@ -30,6 +33,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         mpl.rcParams.update({'font.size': 12})
         #setup the figure
         self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
+        
         self.compute_initial_figure()
         FigureCanvas.__init__(self,self.fig)
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
@@ -145,15 +149,14 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         timearray = channel.time_track(absolute_time = True)
         timearray = timearray.astype('M8[us]').tolist()#.astype(datetime.datetime)
-        localtz = tzlocal.get_localzone()
-        # timearray = list(map(lambda x: x.replace(tzinfo=pytz.utc).astimezone(localtz),timearray))
+        
         data = channel.data
 
         if self.dataline in self.axes.lines:
             self.axes.lines.remove(self.dataline)
 
         self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
-        
+        self.axes.xaxis.set_major_formatter(FuncFormatter(dateformatter))
         x_label  = 'Time'
         y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
         self.axes.set_xlabel(x_label)
@@ -171,8 +174,9 @@ class MyDynamicMplCanvas(FigureCanvas):
                 
         self.eventticks = []
         for event in self.mainwindow.jsonfile:
-            time = datetime.datetime.utcfromtimestamp(event['dt'])
-            time = time.replace(tzinfo=pytz.utc)
+            # time = datetime.datetime.utcfromtimestamp(event['dt'])
+            # time = time.replace(tzinfo=pytz.utc)
+            time = np.datetime64(int(event['dt']),'s')
             label = event['event']['type'] + '\n'
             eventinfo = event['event']['event info']
             for key in eventinfo:
@@ -239,3 +243,12 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.fig.autofmt_xdate()
         self.draw()
 
+def dateformatter(value, tick_number):
+    #value is liek 70000, and can't figure out why
+    time = mpl.dates.num2date(value)
+    localtz = tzlocal.get_localzone()
+    time = time.replace(tzinfo = pytz.utc).astimezone(localtz)
+    string = time.strftime('%H:%M:%S') + ' - '
+    
+    # value = value.replace(tzinfo=pytz.utc).astimezone(localtz)
+    return string
