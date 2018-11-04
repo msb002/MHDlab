@@ -196,7 +196,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         eventtypelist = []
         for event in self.jsonfile:
             eventtypelist.append(event['event']['type'])
-        eventtypelist = set(eventtypelist)
+        
+        eventtypelist = list(set(eventtypelist))
+        eventtypelist.sort()
         self.select_eventtickdisplay.clear()
         self.select_eventtickdisplay.insertItems(0,eventtypelist)
         
