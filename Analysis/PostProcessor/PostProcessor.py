@@ -134,8 +134,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.text_docstring.clear()
         function = self.functionlist[self.combo_function.currentIndex()]
         docstring = function.__doc__
-        if(docstring[0] == '\n'):
-            docstring = docstring[1:]
+        if docstring is None:
+            docstring = 'Missing Docstring'
+        else:
+            if(docstring[0] == '\n'):
+                docstring = docstring[1:]
 
         self.text_docstring.insertPlainText(docstring)
 
