@@ -77,11 +77,14 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
         self.combo_function.currentIndexChanged.connect(self.refresh_docstring)
         self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
+        self.select_eventtickdisplay.itemClicked.connect(self.plotwidget.update_eventticks)
 
         self.refresh_modulelist()
         self.refresh_time()
         
     ###Widget updating###
+
+        
 
     def refresh(self):
         """full refresh of everything"""
@@ -98,6 +101,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.update_stats(self.channel)
         self.refresh_time()
         self.display_eventlog()
+        
 
     def refresh_modulelist(self):
         """Pull public post processing modules from mhd.post and list in the module combo box"""
@@ -196,6 +200,16 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.update_time_inputs(timestamp1,timestamp2)
 
+    def update_eventticklist(self):
+        """Updates the event to display channels in selected group"""
+        eventtypelist = []
+        for event in self.jsonfile:
+            eventtypelist.append(event['event']['type'])
+        eventtypelist = set(eventtypelist)
+        self.select_eventtickdisplay.clear()
+        self.select_eventtickdisplay.insertItems(0,eventtypelist)
+        
+
     def update_time_inputs(self, timestamp1, timestamp2):
         #update_time_displays : updates the time inputs to max and min of channel
 
@@ -241,6 +255,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
 
     ###Loading of files###
+
+    def newfile_refresh(self):
+        self.update_eventticklist()
+        self.plotwidget.update_eventticks()
+        self.refresh()
+
     def open_eventlog(self, filepath= 0):
         if(filepath == 0):
             paths = QtWidgets.QFileDialog.getOpenFileName(MainWindow, 'Open File', self.ppsettings['defaultpath'])
@@ -253,12 +273,11 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             folder = os.path.split(filepath)[0]
             self.datefolder = folder
 
-        #self.refresh()      
-        self.plotwidget.update_eventticks()
+        
         timestamp1 = self.jsonfile[0]['dt']
         timestamp2 = self.jsonfile[-1]['dt']
         self.update_time_inputs(timestamp1,timestamp2)
-        self.refresh()
+        self.newfile_refresh()
 
     def open_tdmsfile(self, filepath= 0):
         """
@@ -282,8 +301,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.ppsettings['defaultpath'] = folder
                 json.dump(self.ppsettings,writefile )
 
-
-
             #search upward in file directory for eventlog.json, then set that as the date folder
             while(True):             
                 filelist = os.listdir(folder)
@@ -302,9 +319,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.selectGroup.setCurrentRow(0)
             
             self.update_channel_display()
-            
-            self.refresh()      
-            self.plotwidget.update_eventticks()
+            self.newfile_refresh()
         
     ###Running post processing routines###
     def run_routine(self):
