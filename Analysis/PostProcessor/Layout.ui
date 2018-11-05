@@ -23,9 +23,9 @@
    <widget class="QDateTimeEdit" name="startTimeInput">
     <property name="geometry">
      <rect>
-      <x>106</x>
-      <y>4</y>
-      <width>194</width>
+      <x>75</x>
+      <y>8</y>
+      <width>171</width>
       <height>22</height>
      </rect>
     </property>
@@ -39,9 +39,9 @@
    <widget class="QDateTimeEdit" name="endTimeInput">
     <property name="geometry">
      <rect>
-      <x>386</x>
-      <y>4</y>
-      <width>194</width>
+      <x>331</x>
+      <y>8</y>
+      <width>151</width>
       <height>22</height>
      </rect>
     </property>
@@ -76,7 +76,7 @@
      <rect>
       <x>606</x>
       <y>230</y>
-      <width>291</width>
+      <width>311</width>
       <height>221</height>
      </rect>
     </property>
@@ -86,7 +86,7 @@
      <rect>
       <x>756</x>
       <y>40</y>
-      <width>141</width>
+      <width>161</width>
       <height>151</height>
      </rect>
     </property>
@@ -149,7 +149,7 @@
      <rect>
       <x>606</x>
       <y>40</y>
-      <width>131</width>
+      <width>141</width>
       <height>151</height>
      </rect>
     </property>
@@ -507,8 +507,8 @@
    <widget class="QLabel" name="label_16">
     <property name="geometry">
      <rect>
-      <x>36</x>
-      <y>6</y>
+      <x>5</x>
+      <y>10</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -520,8 +520,8 @@
    <widget class="QLabel" name="label_17">
     <property name="geometry">
      <rect>
-      <x>311</x>
-      <y>6</y>
+      <x>256</x>
+      <y>10</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -681,6 +681,35 @@
     </property>
     <property name="text">
      <string>Select Event ticks</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="numpointsedit">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>10</y>
+      <width>71</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="contextMenuPolicy">
+     <enum>Qt::PreventContextMenu</enum>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_21">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>10</y>
+      <width>51</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string># Points</string>
     </property>
    </widget>
   </widget>

@@ -79,8 +79,8 @@ class MyDynamicMplCanvas(FigureCanvas):
             press = np.datetime64(mpl.dates.num2date(eventxdata))
             self.press = x0, press
             clickedonartist = True
-        
-        self.update_eventticks()
+        if self.mainwindow.jsonfile != None:
+            self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
                 #clicked on an event tick
@@ -94,7 +94,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                     self.annot.set_visible(False)
                     time = tick.get_xdata()
                     datetime = QtCore.QDateTime()
-                    datetime.setTime_t(timefuncs.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
+                    datetime.setTime_t(timefuncs.np64_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
                     if(self.lastselectedline == self.timeline1):
                         self.mainwindow.startTimeInput.setDateTime(datetime)
@@ -106,10 +106,11 @@ class MyDynamicMplCanvas(FigureCanvas):
             # didn't click on anything 
 
             self.annot.set_visible(False)
-            self.update_eventticks()
             self.lastselectedline =  None
             self.timeline1.set_color('gray')
             self.timeline2.set_color('gray')
+            if self.mainwindow.jsonfile != None:
+                self.update_eventticks()
 
         self.draw()
         
@@ -138,7 +139,6 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
-            self.mainwindow.update_fig()
             self.selectedline.figure.canvas.draw()
             self.selectedline = None
             

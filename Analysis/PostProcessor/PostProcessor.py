@@ -19,7 +19,7 @@ import inspect
 import importlib
 import types
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from MPLCanvas import MyDynamicMplCanvas
 
 import mhdpy.post as pp
@@ -39,6 +39,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.eventlog_latest = None #used so eventlog is only updated if new events are in time window
         self.Logfiletdms = None
         self.logfilepath = None
+        self.jsonfile = None
+        self.timearray = None
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
@@ -60,8 +62,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(self.mplframe.geometry())
         self.plotwidget.setObjectName("widget")
-        self.startTimeInput.dateTimeChanged.connect(self.update_fig)
-        self.endTimeInput.dateTimeChanged.connect(self.update_fig)
+        self.startTimeInput.dateTimeChanged.connect(self.timeinput_edited)
+        self.endTimeInput.dateTimeChanged.connect(self.timeinput_edited)
         self.btn_update_fig.clicked.connect(self.update_fig)
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
@@ -76,10 +78,33 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
         self.select_eventtickdisplay.itemClicked.connect(self.plotwidget.update_eventticks)
 
+        regex = QtCore.QRegExp("[0-9_]+")
+        validator = QtGui.QRegExpValidator(regex)
+        self.numpointsedit.setValidator(validator)
+        self.numpointsedit.textChanged.connect(self.numpoints_edited)
+
         self.update_modulelist()
         self.update_vlines()
         
     ###Widget updating###
+
+
+    #---time updating funcitons: insures that order is correct depending on which input was updated--- Note that the 'vlines_updated function' is handled within MPLCanvas.on_release
+    def timeinput_edited(self):
+        self.update_vlines()
+        self.update_numpoints()
+
+    def numpoints_edited(self):
+        if self.timearray is not None:
+            numpoints_text = self.numpointsedit.text()
+            if numpoints_text != '':
+                idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+                idx2 = idx1 + int(numpoints_text)
+                time2 = self.timearray[idx2]
+                timestamp1 = timefuncs.np64_to_unix(self.time1)   
+                timestamp2 = timefuncs.np64_to_unix(time2)   
+                self.update_time_inputs(timestamp1, timestamp2)
+                self.update_vlines()
 
     def update_fig(self):
         """Update the figure"""
@@ -91,9 +116,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             if (self.channel == None) or (self.channel != channels[selchannel]):
                 self.channel = channels[selchannel]
                 self.plotwidget.update_data(self.channel)
-                    
+                
             self.update_stats(self.channel)
-        self.update_vlines()
         self.update_eventlog_display()
         
     def update_modulelist(self):
@@ -154,6 +178,31 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.plotwidget.draw()
 
+    def update_time_inputs(self, timestamp1, timestamp2):
+        """Update the time inputs based on timestamps. timestamps should be altered to numpy64"""
+
+        startdatetime = QtCore.QDateTime()
+        startdatetime.setTime_t(timestamp1)
+        enddatetime = QtCore.QDateTime()
+        enddatetime.setTime_t(timestamp2)
+
+        #update the time selectors, but don't signal to update_fig
+        self.startTimeInput.blockSignals(True)
+        self.endTimeInput.blockSignals(True)
+        self.startTimeInput.setDateTime(startdatetime)
+        self.endTimeInput.setDateTime(enddatetime)
+        self.startTimeInput.blockSignals(False)
+        self.endTimeInput.blockSignals(False)
+
+    def update_numpoints(self):
+        if self.timearray is not None:
+            idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+            idx2 = timefuncs.nearest_timeind(self.timearray,self.time2)
+            numpoints = abs(idx2 - idx1)
+            self.numpointsedit.blockSignals(True)
+            self.numpointsedit.setText(str(numpoints))
+            self.numpointsedit.blockSignals(False)
+
     def update_stats(self,channel):
         """update the statistics calculations and display"""
         idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
@@ -190,6 +239,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
 
         self.update_time_inputs(timestamp1,timestamp2)
+        self.timeinput_edited()
 
     def update_eventticklist(self):
         """Updates the event to display channels in selected group"""
@@ -203,21 +253,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.select_eventtickdisplay.insertItems(0,eventtypelist)
         
 
-    def update_time_inputs(self, timestamp1, timestamp2):
-        #update_time_displays : updates the time inputs to max and min of channel
 
-        startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(timestamp1)
-        enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(timestamp2)
-
-        #update the time selectors, but don't signal to update_fig
-        self.startTimeInput.blockSignals(True)
-        self.endTimeInput.blockSignals(True)
-        self.startTimeInput.setDateTime(startdatetime)
-        self.endTimeInput.setDateTime(enddatetime)
-        self.startTimeInput.blockSignals(False)
-        self.endTimeInput.blockSignals(False)
 
     def update_eventlog_display(self):
         """update the cut eventlog in the text display and update the folder and filename inputs"""
