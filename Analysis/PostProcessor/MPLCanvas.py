@@ -49,7 +49,8 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.lastselectedline = None
 
     def compute_initial_figure(self):
-        self.dataline, = self.axes.plot([], [], 'r')
+        dataline, = self.axes.plot([], [], 'r')
+        self.datalines = [dataline]
         self.timeline1 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
         self.timeline2 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
         self.eventticks = [mpl.lines.Line2D([0],[0])]
@@ -79,8 +80,8 @@ class MyDynamicMplCanvas(FigureCanvas):
             press = np.datetime64(mpl.dates.num2date(eventxdata))
             self.press = x0, press
             clickedonartist = True
-        
-        self.update_eventticks()
+        if self.mainwindow.jsonfile != None:
+            self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
                 #clicked on an event tick
@@ -94,7 +95,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                     self.annot.set_visible(False)
                     time = tick.get_xdata()
                     datetime = QtCore.QDateTime()
-                    datetime.setTime_t(timefuncs.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
+                    datetime.setTime_t(timefuncs.np64_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
                     if(self.lastselectedline == self.timeline1):
                         self.mainwindow.startTimeInput.setDateTime(datetime)
@@ -106,10 +107,11 @@ class MyDynamicMplCanvas(FigureCanvas):
             # didn't click on anything 
 
             self.annot.set_visible(False)
-            self.update_eventticks()
             self.lastselectedline =  None
             self.timeline1.set_color('gray')
             self.timeline2.set_color('gray')
+            if self.mainwindow.jsonfile != None:
+                self.update_eventticks()
 
         self.draw()
         
@@ -138,24 +140,31 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
-            self.mainwindow.update_fig()
             self.selectedline.figure.canvas.draw()
+            self.mainwindow.update_eventlog_display()
             self.selectedline = None
             
         self.press = None 
         
-    def update_data(self,channel):
+    def update_data(self,channel_array):
         #updates the figure with a new channel. 
 
-        timearray = channel.time_track(absolute_time = True)
-        timearray = timearray.astype('M8[us]').tolist()#.astype(datetime.datetime)
-        
-        data = channel.data
+        for dataline in self.datalines:
+            if dataline in self.axes.lines:
+                self.axes.lines.remove(dataline)
+        self.datalines = []
+        self.axes.set_prop_cycle(None)
 
-        if self.dataline in self.axes.lines:
-            self.axes.lines.remove(self.dataline)
+        for channel in channel_array:
+            timearray = channel.time_track(absolute_time = True)
+            timearray = timearray.astype('M8[us]').tolist()
+            # timearray = mpl.dates.date2num(timearray) #need to try this
+            
+            data = channel.data
 
-        self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
+            dataline, = self.axes.plot(timearray,data, linestyle = '-', picker = 5, label = channel.group + '\\' + channel.channel)
+            self.datalines.append(dataline)
+
         self.axes.xaxis.set_major_formatter(FuncFormatter(dateformatter))
         x_label  = 'Time'
         y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
@@ -163,7 +172,17 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.axes.set_ylabel(y_label)
 
         self.zoom('all')
-        self.fig.tight_layout()
+        
+
+        leg = self.axes.legend_
+        if leg is not None:
+            leg.remove()
+            self.axes.legend()
+        
+        try:
+            self.fig.tight_layout()
+        except:
+            print('could not run tight_layout, legend is probably too large')
         self.draw()
 
     def update_eventticks(self):
@@ -215,9 +234,16 @@ class MyDynamicMplCanvas(FigureCanvas):
             timearray = [time1,time2]
             
         else:
-            ydata = self.dataline.get_ydata()
-            timearray = self.dataline.get_xdata()
-        
+            dataline = self.datalines[0]
+            ydata = dataline.get_ydata()
+            timearray = dataline.get_xdata()
+
+        #Autoscale the y axis before setting the x axis to the zoom
+        # recompute the ax.dataLim
+        self.axes.relim()
+        # update ax.viewLim using the new dataLim
+        self.axes.autoscale_view()        
+
         
         if(option == 'sel'):
             #vertical line selection
@@ -238,17 +264,25 @@ class MyDynamicMplCanvas(FigureCanvas):
             padtime = (maxtime-mintime)/4
             self.axes.set_xlim(mintime - padtime,maxtime + padtime)
 
-            
-        miny = min(ydata)       
-        maxy = max(ydata)
-        pady = (maxy-miny)/10
-        self.axes.set_ylim(miny-pady,maxy+pady)
+        ##This is the old yscale code
+        # miny = min(ydata)       
+        # maxy = max(ydata)
+        # pady = (maxy-miny)/10
+        # self.axes.set_ylim(miny-pady,maxy+pady)
+
 
         self.fig.autofmt_xdate()
         self.draw()
 
+    def legend_toggle(self):
+        leg = self.axes.legend_
+        if leg is None:
+            self.axes.legend()
+        else:
+            leg.remove()
+        self.draw()
+
 def dateformatter(value, tick_number):
-    
     time = mpl.dates.num2date(value)
     localtz = tzlocal.get_localzone()
     time = time.replace(tzinfo = pytz.utc).astimezone(localtz)
