@@ -402,7 +402,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
         pp_function = pp.logfiles.cut_log_file
         fileinpaths = [self.logfilepath]
-        times = self.gen_times(timetype = 0)
+        times = self.gen_times(timetype = 'Markers')
 
         folder = os.path.split(self.logfilepath)[0]
 
