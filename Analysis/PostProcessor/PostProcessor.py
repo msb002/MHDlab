@@ -296,12 +296,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     ###Loading of files###
 
     def newfile_update(self):
-        #pull out groups and populate the group display
-        self.groups = self.Logfiletdms.groups()
-        self.selectGroup.clear()
-        self.selectGroup.insertItems(0,self.groups)
-        self.selectGroup.setCurrentRow(0)
-        self.update_channel_display()
+        #common updating between opening a new eventlog and a new logfile
         self.update_eventticklist()
         self.plotwidget.update_eventticks()
         self.update_fig()
@@ -321,6 +316,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         timestamp1 = self.jsonfile[0]['dt']
         timestamp2 = self.jsonfile[-1]['dt']
         self.update_time_inputs(timestamp1,timestamp2)
+        self.timeinput_edited()
+        self.plotwidget.zoom('all')
         self.newfile_update()
 
     def open_tdmsfile(self, filepath= 0):
@@ -355,6 +352,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                         self.jsonfile = json.load(fp)
                     break
                 folder = os.path.split(folder)[0]
+            #pull out groups and populate the group display
+            self.groups = self.Logfiletdms.groups()
+            self.selectGroup.clear()
+            self.selectGroup.insertItems(0,self.groups)
+            self.selectGroup.setCurrentRow(0)
+            self.update_channel_display()
 
             self.newfile_update()
         

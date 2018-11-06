@@ -172,13 +172,17 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.axes.set_ylabel(y_label)
 
         self.zoom('all')
-        self.fig.tight_layout()
+        
 
         leg = self.axes.legend_
         if leg is not None:
             leg.remove()
             self.axes.legend()
-
+        
+        try:
+            self.fig.tight_layout()
+        except:
+            print('could not run tight_layout, legend is probably too large')
         self.draw()
 
     def update_eventticks(self):
