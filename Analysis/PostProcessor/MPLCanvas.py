@@ -142,6 +142,8 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
             self.selectedline.figure.canvas.draw()
             self.mainwindow.update_eventlog_display()
+            if (len(self.mainwindow.channel_array)>0):
+                self.mainwindow.update_stats(self.mainwindow.channel_array[0])
             self.selectedline = None
             
         self.press = None 
