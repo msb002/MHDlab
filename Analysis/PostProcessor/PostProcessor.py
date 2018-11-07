@@ -96,6 +96,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.update_vlines()
         self.update_numpoints()
         self.update_eventlog_display()
+        if (len(self.channel_array)>0):
+            self.update_stats(self.channel_array[0])
 
     def numpoints_edited(self):
         if self.timearray is not None:
@@ -109,6 +111,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.update_time_inputs(timestamp1, timestamp2)
                 self.update_vlines()
                 self.update_eventlog_display()
+                self.update_stats(self.channel_array[0])
 
     def update_vlines(self):
         """pull the time from the inputs and update the gray lines on the display"""
