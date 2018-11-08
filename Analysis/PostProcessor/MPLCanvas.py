@@ -142,8 +142,8 @@ class MyDynamicMplCanvas(FigureCanvas):
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
             self.selectedline.figure.canvas.draw()
             self.mainwindow.update_eventlog_display()
-            if (len(self.mainwindow.channel_array)>0):
-                self.mainwindow.update_stats(self.mainwindow.channel_array[0])
+            if (self.mainwindow.channel_data is not None):
+                self.mainwindow.update_stats()
             self.selectedline = None
             
         self.press = None 
@@ -158,11 +158,11 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.axes.set_prop_cycle(None)
 
         for channel in channel_array:
-            timearray = channel.time_track(absolute_time = True)
+            timearray = channel.time_track(absolute_time = True)[::self.mainwindow.stride]
             timearray = timearray.astype('M8[us]').tolist()
             # timearray = mpl.dates.date2num(timearray) #need to try this
             
-            data = channel.data
+            data = channel.data[::self.mainwindow.stride]
 
             dataline, = self.axes.plot(timearray,data, linestyle = '-', picker = 5, label = channel.group + '\\' + channel.channel)
             self.datalines.append(dataline)
