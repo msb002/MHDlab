@@ -94,7 +94,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
     ###Widget updating###
 
 
-    #---time updating funcitons: insures that order is correct depending on which input was updated--- Note that the 'vlines_updated function' is handled within MPLCanvas.on_release
+    #---time updating funcitons: The order of these updating functions needs to be taken care of. The top funcitons insure that order is correct depending on which input was updated--- Note that the 'vlines_updated function' is handled within MPLCanvas.on_release
     def timeinput_edited(self):
         self.update_vlines()
         self.update_numpoints()
@@ -157,11 +157,20 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             self.numpointsedit.blockSignals(True)
             self.numpointsedit.setText(str(numpoints))
             self.numpointsedit.blockSignals(False)
-
     
     #General updating that doesn't need to be coordinated with each other
     def update_fig(self):
-        """Update the figure"""
+        self.update_channel_array()
+        if self.timearray is not None:
+            print(self.channel_array)
+            self.update_time_inputs(timefuncs.np64_to_unix(self.timearray[0]),timefuncs.np64_to_unix(self.timearray[-1]))
+            self.timeinput_edited()
+            self.plotwidget.update_data(self.channel_array)    
+            self.update_stats() 
+        self.update_eventlog_display()
+
+    def update_channel_array(self):
+        """Update the internal array of channels based on the list seleciton"""
         if(self.Logfiletdms != None):
             self.channel_array = []
             for sel_channel in self.selectChannel.selectedItems():
@@ -170,25 +179,16 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.channel_array.append(channel)
             if (len(self.channel_array) > 0):
                 
+                #Calculate the 'stride' which is every x data points, to reduce the probelm handing large data files.
                 if self.radioButton_stride.isChecked():
                     num_samples = self.channel_array[0].properties['wf_samples']
                     self.stride = math.ceil(num_samples/1000)
                 else:
                     self.stride = 1
-                print('Stride ', str(self.stride))
+                #Currently the timearray and channel_data, used for stats calc and other things, are just the first channel in the seleciton. 
                 self.timearray = self.channel_array[0].time_track(absolute_time = True)[::self.stride]
                 self.timearray = self.timearray.astype('M8[us]')
-                self.channel_data =  self.channel_array[0].data[::self.stride]
-
-                timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
-                timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
-
-                self.update_time_inputs(timestamp1,timestamp2)
-                self.timeinput_edited()
-
-                self.plotwidget.update_data(self.channel_array)    
-                self.update_stats() #select trace?
-        self.update_eventlog_display()
+                self.channel_data =  self.channel_array[0].data[::self.stride] 
         
     def update_modulelist(self):
         """Pull public post processing modules from mhd.post and list in the module combo box"""
@@ -265,14 +265,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
-
-        # self.timearray = channels[0].time_track(absolute_time = True)
-        # self.timearray = self.timearray.astype('M8[us]')
         
-
-
     def update_eventticklist(self):
-        """Updates the event to display channels in selected group"""
+        """Displays the events detected in the eventlog"""
         eventtypelist = []
         for event in self.jsonfile:
             eventtypelist.append(event['event']['type'])
