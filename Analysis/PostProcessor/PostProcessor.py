@@ -20,6 +20,8 @@ import inspect
 import importlib
 import types
 
+import math
+
 from PyQt5 import QtCore, QtWidgets, QtGui
 from MPLCanvas import MyDynamicMplCanvas
 
@@ -42,6 +44,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.logfilepath = None
         self.jsonfile = None
         self.timearray = None
+        self.channel_data = None
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
@@ -96,8 +99,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.update_vlines()
         self.update_numpoints()
         self.update_eventlog_display()
-        if (len(self.channel_array)>0):
-            self.update_stats(self.channel_array[0])
+        if (self.channel_data is not None):
+            self.update_stats()
 
     def numpoints_edited(self):
         if self.timearray is not None:
@@ -111,7 +114,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.update_time_inputs(timestamp1, timestamp2)
                 self.update_vlines()
                 self.update_eventlog_display()
-                self.update_stats(self.channel_array[0])
+                self.update_stats()
 
     def update_vlines(self):
         """pull the time from the inputs and update the gray lines on the display"""
@@ -166,8 +169,25 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 channel = self.Logfiletdms.object(grouptxt,channeltxt)
                 self.channel_array.append(channel)
             if (len(self.channel_array) > 0):
+                
+                if self.radioButton_stride.isChecked():
+                    num_samples = self.channel_array[0].properties['wf_samples']
+                    self.stride = math.ceil(num_samples/1000)
+                else:
+                    self.stride = 1
+                print('Stride ', str(self.stride))
+                self.timearray = self.channel_array[0].time_track(absolute_time = True)[::self.stride]
+                self.timearray = self.timearray.astype('M8[us]')
+                self.channel_data =  self.channel_array[0].data[::self.stride]
+
+                timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
+                timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
+
+                self.update_time_inputs(timestamp1,timestamp2)
+                self.timeinput_edited()
+
                 self.plotwidget.update_data(self.channel_array)    
-                self.update_stats(self.channel_array[0]) #select trace?
+                self.update_stats() #select trace?
         self.update_eventlog_display()
         
     def update_modulelist(self):
@@ -213,17 +233,17 @@ class Ui_MainWindow(layout.Ui_MainWindow):
 
         self.text_docstring.insertPlainText(docstring)
 
-    def update_stats(self,channel):
+    def update_stats(self):
         """update the statistics calculations and display"""
         idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
         idx2 = timefuncs.nearest_timeind(self.timearray,self.time2)
-        if len(channel.data[idx1:idx2]) > 0:
-            self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
-            self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
-            self.t_skew.setText('{0:.3f}'.format(stats.skew(channel.data[idx1:idx2])))
-            self.t_std.setText('{0:.3f}'.format(np.std(channel.data[idx1:idx2])))
-            self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
-            self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
+        if len(self.channel_data[idx1:idx2]) > 0:
+            self.t_mean.setText('{0:.3f}'.format(np.mean(self.channel_data[idx1:idx2])))
+            self.t_med.setText('{0:.3f}'.format(np.median(self.channel_data[idx1:idx2])))
+            self.t_skew.setText('{0:.3f}'.format(stats.skew(self.channel_data[idx1:idx2])))
+            self.t_std.setText('{0:.3f}'.format(np.std(self.channel_data[idx1:idx2])))
+            self.t_min.setText('{0:.3f}'.format(np.min(self.channel_data[idx1:idx2])))
+            self.t_max.setText('{0:.3f}'.format(np.max(self.channel_data[idx1:idx2])))
 
     def reloadppr(self):
         """reloads the mhdpy package and updates the module list"""
@@ -246,14 +266,10 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.selectChannel.insertItems(0,channelnamelist)
         self.selectChannel.setCurrentRow(0)
 
-        self.timearray = channels[0].time_track(absolute_time = True)
-        self.timearray = self.timearray.astype('M8[us]')
+        # self.timearray = channels[0].time_track(absolute_time = True)
+        # self.timearray = self.timearray.astype('M8[us]')
         
-        timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
-        timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
 
-        self.update_time_inputs(timestamp1,timestamp2)
-        self.timeinput_edited()
 
     def update_eventticklist(self):
         """Updates the event to display channels in selected group"""
@@ -344,6 +360,7 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             with open(self.settingspath,'w') as writefile:
                 self.ppsettings['defaultpath'] = folder
                 json.dump(self.ppsettings,writefile )
+
 
             #search upward in file directory for eventlog.json, then set that as the date folder
             while(True):             
