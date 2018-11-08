@@ -9,11 +9,15 @@ import sys
 import pytz
 import tzlocal
 import datetime
+import numpy as np
 from PyQt5 import QtCore, QtWidgets
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.ticker import ScalarFormatter, FormatStrFormatter, FuncFormatter
+
+
 
 import mhdpy.timefuncs as timefuncs
 
@@ -29,6 +33,7 @@ class MyDynamicMplCanvas(FigureCanvas):
         mpl.rcParams.update({'font.size': 12})
         #setup the figure
         self.fig, self.axes= plt.subplots(figsize = (width,height), dpi=dpi)
+        
         self.compute_initial_figure()
         FigureCanvas.__init__(self,self.fig)
         FigureCanvas.setSizePolicy(self,QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
@@ -44,7 +49,8 @@ class MyDynamicMplCanvas(FigureCanvas):
         self.lastselectedline = None
 
     def compute_initial_figure(self):
-        self.dataline, = self.axes.plot([], [], 'r')
+        dataline, = self.axes.plot([], [], 'r')
+        self.datalines = [dataline]
         self.timeline1 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
         self.timeline2 = self.axes.axvline(0, linestyle = '--', color = 'gray',zorder = 3)
         self.eventticks = [mpl.lines.Line2D([0],[0])]
@@ -70,11 +76,12 @@ class MyDynamicMplCanvas(FigureCanvas):
 
             self.selectedline.set_color('g')
             x0 = self.selectedline.get_xdata()[0]
-            press = mpl.dates.num2date(event.xdata)
+            eventxdata = event.xdata
+            press = np.datetime64(mpl.dates.num2date(eventxdata))
             self.press = x0, press
             clickedonartist = True
-        
-        self.update_eventticks()
+        if self.mainwindow.jsonfile != None:
+            self.update_eventticks()
         for tick in self.eventticks:
             if(tick.contains(event)[0]):
                 #clicked on an event tick
@@ -88,7 +95,7 @@ class MyDynamicMplCanvas(FigureCanvas):
                     self.annot.set_visible(False)
                     time = tick.get_xdata()
                     datetime = QtCore.QDateTime()
-                    datetime.setTime_t(timefuncs.datetime_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
+                    datetime.setTime_t(timefuncs.np64_to_unix(time[0])+1) # Add one second to make sure on right side of test case info
 
                     if(self.lastselectedline == self.timeline1):
                         self.mainwindow.startTimeInput.setDateTime(datetime)
@@ -100,10 +107,11 @@ class MyDynamicMplCanvas(FigureCanvas):
             # didn't click on anything 
 
             self.annot.set_visible(False)
-            self.update_eventticks()
             self.lastselectedline =  None
             self.timeline1.set_color('gray')
             self.timeline2.set_color('gray')
+            if self.mainwindow.jsonfile != None:
+                self.update_eventticks()
 
         self.draw()
         
@@ -113,7 +121,7 @@ class MyDynamicMplCanvas(FigureCanvas):
 
         #calculate new position of the vertical line and draw it. 
         x0, xpress = self.press
-        dx = mpl.dates.num2date(event.xdata) - xpress
+        dx = np.datetime64(mpl.dates.num2date(event.xdata)) - xpress
         newtime = x0 + dx
         self.selectedline.set_xdata([newtime,newtime])
         self.selectedline.figure.canvas.draw()
@@ -124,39 +132,59 @@ class MyDynamicMplCanvas(FigureCanvas):
             #if letting go of a line, update the relevant time display.
 
             x0, xpress = self.press
-            dx = mpl.dates.num2date(event.xdata) - xpress
+            dx = np.datetime64(mpl.dates.num2date(event.xdata)) - xpress
             newtime = x0 + dx
             startdatetime = QtCore.QDateTime()
-            startdatetime.setTime_t(newtime.timestamp())
+            startdatetime.setTime_t(timefuncs.np64_to_unix(newtime))
             if self.selectedline == self.timeline1:
                 self.mainwindow.startTimeInput.setDateTime(startdatetime)
             elif self.selectedline == self.timeline2:
                 self.mainwindow.endTimeInput.setDateTime(startdatetime)
-            self.mainwindow.refresh()
             self.selectedline.figure.canvas.draw()
+            self.mainwindow.update_eventlog_display()
+            if (self.mainwindow.channel_data is not None):
+                self.mainwindow.update_stats()
             self.selectedline = None
             
         self.press = None 
         
-    def update_data(self,channel):
+    def update_data(self,channel_array):
         #updates the figure with a new channel. 
 
-        timearray = channel.time_track(absolute_time = True)
-        timearray = list(map(lambda x: timefuncs.np64_to_utc(x).replace(tzinfo=pytz.utc).astimezone(tzlocal.get_localzone()),timearray))
-        data = channel.data
+        for dataline in self.datalines:
+            if dataline in self.axes.lines:
+                self.axes.lines.remove(dataline)
+        self.datalines = []
+        self.axes.set_prop_cycle(None)
 
-        if self.dataline in self.axes.lines:
-            self.axes.lines.remove(self.dataline)
+        for channel in channel_array:
+            timearray = channel.time_track(absolute_time = True)[::self.mainwindow.stride]
+            timearray = timearray.astype('M8[us]').tolist()
+            # timearray = mpl.dates.date2num(timearray) #need to try this
+            
+            data = channel.data[::self.mainwindow.stride]
 
-        self.dataline, = self.axes.plot(timearray,data, linestyle = '-', color = 'b', picker = 5)
-        
+            dataline, = self.axes.plot(timearray,data, linestyle = '-', picker = 5, label = channel.group + '\\' + channel.channel)
+            self.datalines.append(dataline)
+
+        self.axes.xaxis.set_major_formatter(FuncFormatter(dateformatter))
         x_label  = 'Time'
         y_label = channel.properties['NI_ChannelName'] + ' (' + channel.properties['unit_string'] + ')'
         self.axes.set_xlabel(x_label)
         self.axes.set_ylabel(y_label)
 
         self.zoom('all')
-        self.fig.tight_layout()
+        
+
+        leg = self.axes.legend_
+        if leg is not None:
+            leg.remove()
+            self.axes.legend()
+        
+        try:
+            self.fig.tight_layout()
+        except:
+            print('could not run tight_layout, legend is probably too large')
         self.draw()
 
     def update_eventticks(self):
@@ -164,36 +192,38 @@ class MyDynamicMplCanvas(FigureCanvas):
         for line in self.eventticks:
             if line in self.axes.lines:
                 self.axes.lines.remove(line)
+
+        sel_eventtypes = self.mainwindow.select_eventtickdisplay.selectedItems()
+        sel_eventtypes = [event.text() for event in sel_eventtypes]
                 
         self.eventticks = []
         for event in self.mainwindow.jsonfile:
-            time = datetime.datetime.utcfromtimestamp(event['dt'])
-            time = time.replace(tzinfo=pytz.utc)
-            label = event['event']['type'] + '\n'
-            eventinfo = event['event']['event info']
-            for key in eventinfo:
-                #label = tc['project'] + '\\\n' + tc['subfolder'] + '\\\n' + tc['filename'] + '_' + tc['measurementnumber']
-                label = label + key + ': ' +  str(eventinfo[key]) + '\n'
+            if event['event']['type'] in sel_eventtypes:
+                time = np.datetime64(int(event['dt']),'s')
+                label = event['event']['type'] + '\n'
+                eventinfo = event['event']['event info']
+                for key in eventinfo:
+                    label = label + key + ': ' +  str(eventinfo[key]) + '\n'
 
-            #Note: green is currently what is used for clicked items
-            colordict = {
-                'VIRunningChange': 'orange',
-                'TestCaseInfoChange': 'r',
-                'VISavingChange' : 'c'
-            }
+                #Note: green is currently what is used for clicked items
+                colordict = {
+                    'VIRunningChange': 'orange',
+                    'TestCaseInfoChange': 'r',
+                    'VISavingChange' : 'c'
+                }
 
-            try:
-                color = colordict[event['event']['type']]
-            except:
-                color = 'black'
+                try:
+                    color = colordict[event['event']['type']]
+                except:
+                    color = 'black'
 
-            linestyle = '-'
-            alpha = 1
-            if(event['event']['type'] == 'VISavingChange'):
-                if(event['event']['event info']['name'] == 'PIMAX_2'):
-                    alpha = 0.3
-            self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,alpha = alpha,linestyle = linestyle,label = label,picker = 2, linewidth = 3))
-            ##these vertical lines do not need to be in local time for some reason
+                linestyle = '-'
+                alpha = 1
+                if(event['event']['type'] == 'VISavingChange'):
+                    if(event['event']['event info']['name'] == 'PIMAX_2'):
+                        alpha = 0.3
+                self.eventticks.append(self.axes.axvline(time, ymin = 0.9, ymax = 1, color = color,alpha = alpha,linestyle = linestyle,label = label,picker = 2, linewidth = 3))
+                ##these vertical lines do not need to be in local time for some reason
         self.draw()
     
     def zoom(self,option):
@@ -206,13 +236,23 @@ class MyDynamicMplCanvas(FigureCanvas):
             timearray = [time1,time2]
             
         else:
-            ydata = self.dataline.get_ydata()
-            timearray = self.dataline.get_xdata()
-        
+            dataline = self.datalines[0]
+            ydata = dataline.get_ydata()
+            timearray = dataline.get_xdata()
+
+        #Autoscale the y axis before setting the x axis to the zoom
+        # recompute the ax.dataLim
+        self.axes.relim()
+        # update ax.viewLim using the new dataLim
+        self.axes.autoscale_view()        
+
         
         if(option == 'sel'):
             #vertical line selection
-            self.axes.set_xlim(self.timeline1.get_xdata()[0],self.timeline2.get_xdata()[0])
+            mintime = self.timeline1.get_xdata()[0]
+            maxtime = self.timeline2.get_xdata()[0]
+            padtime = (maxtime-mintime)/10
+            self.axes.set_xlim(mintime - padtime,maxtime + padtime)
         if(option == 'all'):
             #whole window
             mintime = min(timearray)
@@ -226,12 +266,28 @@ class MyDynamicMplCanvas(FigureCanvas):
             padtime = (maxtime-mintime)/4
             self.axes.set_xlim(mintime - padtime,maxtime + padtime)
 
-            
-        miny = min(ydata)       
-        maxy = max(ydata)
-        pady = (maxy-miny)/10
-        self.axes.set_ylim(miny-pady,maxy+pady)
+        ##This is the old yscale code
+        # miny = min(ydata)       
+        # maxy = max(ydata)
+        # pady = (maxy-miny)/10
+        # self.axes.set_ylim(miny-pady,maxy+pady)
+
 
         self.fig.autofmt_xdate()
         self.draw()
 
+    def legend_toggle(self):
+        leg = self.axes.legend_
+        if leg is None:
+            self.axes.legend()
+        else:
+            leg.remove()
+        self.draw()
+
+def dateformatter(value, tick_number):
+    time = mpl.dates.num2date(value)
+    localtz = tzlocal.get_localzone()
+    time = time.replace(tzinfo = pytz.utc).astimezone(localtz)
+    string = time.strftime('%H:%M:%S') + ' - '
+    
+    return string

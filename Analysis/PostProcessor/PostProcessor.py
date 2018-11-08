@@ -11,6 +11,7 @@ import os
 import sys
 from nptdms import TdmsFile as TF
 import datetime
+import tzlocal
 import pytz
 import json
 import scipy.stats as stats
@@ -19,31 +20,34 @@ import inspect
 import importlib
 import types
 
-from PyQt5 import QtCore, QtWidgets
+import math
+
+from PyQt5 import QtCore, QtWidgets, QtGui
 from MPLCanvas import MyDynamicMplCanvas
 
 import mhdpy.post as pp
 import mhdpy.timefuncs as timefuncs
+import mhdpy.eventlog as el
 
-
-
-progname = os.path.basename(sys.argv[0])
-progversion = "0.1"
-
+progname = os.path.basename(sys.argv[0]) #What is this?
 progfolder = os.path.dirname(sys.argv[0])
+progversion = "0.1"
 
 class Ui_MainWindow(layout.Ui_MainWindow):
     """Main window of the post processor. Inherits from the MainWindow class within layout.py"""
 
+    ###Initialization###
     def __init__(self):
-        self.channel = None # replace in __init__
+        self.channel_array = [] # replace in __init__
         self.eventlog_latest = None #used so eventlog is only updated if new events are in time window
         self.Logfiletdms = None
         self.logfilepath = None
+        self.jsonfile = None
+        self.timearray = None
+        self.channel_data = None
 
         self.settingspath = os.path.join(progfolder, "ppsettings.json")
         if not os.path.exists(self.settingspath):
-            print('hello')
             with open(self.settingspath, 'w') as filewrite:
                 json.dump({},filewrite)
         
@@ -53,21 +57,18 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             except json.decoder.JSONDecodeError:
                 print('Could not read settings')
                 self.ppsettings = {}
-                #json.dump({},fileread)
 
         if not 'defaultpath' in self.ppsettings:
             self.ppsettings['defaultpath'] = 'C:\\Labview Test Data'
-    
-
     
     def link_buttons(self):
         """links internal function to the various widgets in the main window"""
         self.plotwidget = MyDynamicMplCanvas(self,self.centralwidget, width = 5, height = 4, dpi = 100)
         self.plotwidget.setGeometry(self.mplframe.geometry())
         self.plotwidget.setObjectName("widget")
-        self.startTimeInput.dateTimeChanged.connect(self.refresh)
-        self.endTimeInput.dateTimeChanged.connect(self.refresh)
-        self.btn_refresh.clicked.connect(self.refresh)
+        self.startTimeInput.dateTimeChanged.connect(self.timeinput_edited)
+        self.endTimeInput.dateTimeChanged.connect(self.timeinput_edited)
+        self.btn_update_fig.clicked.connect(self.update_fig)
         self.btn_fitall.clicked.connect(lambda : self.plotwidget.zoom('all'))
         self.btn_zoomsel.clicked.connect(lambda : self.plotwidget.zoom('sel'))
         self.btn_zoomout.clicked.connect(lambda : self.plotwidget.zoom('out'))
@@ -75,16 +76,121 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         self.actionOpen.triggered.connect(self.open_tdmsfile)
         self.actionOpen_Eventlog.triggered.connect(self.open_eventlog)
         self.actionReload_ppr.triggered.connect(self.reloadppr)
+        self.actionToggle_Legend.triggered.connect(self.plotwidget.legend_toggle)
         self.selectGroup.itemClicked.connect(self.update_channel_display)
-        self.combo_module.currentIndexChanged.connect(self.refresh_functionlist)
-        self.combo_function.currentIndexChanged.connect(self.refresh_docstring)
+        self.combo_module.currentIndexChanged.connect(self.update_functionlist)
+        self.combo_function.currentIndexChanged.connect(self.update_docstring)
         self.btn_cutinternalinloc.clicked.connect(self.cutinternalinloc)
+        self.select_eventtickdisplay.itemClicked.connect(self.plotwidget.update_eventticks)
 
-        self.refresh_modulelist()
-        self.refresh_time()
+        regex = QtCore.QRegExp("[0-9_]+")
+        validator = QtGui.QRegExpValidator(regex)
+        self.numpointsedit.setValidator(validator)
+        self.numpointsedit.textChanged.connect(self.numpoints_edited)
+
+        self.update_modulelist()
+        self.update_vlines()
+        
+    ###Widget updating###
+
+
+    #---time updating funcitons: The order of these updating functions needs to be taken care of. The top funcitons insure that order is correct depending on which input was updated--- Note that the 'vlines_updated function' is handled within MPLCanvas.on_release
+    def timeinput_edited(self):
+        self.update_vlines()
+        self.update_numpoints()
+        self.update_eventlog_display()
+        if (self.channel_data is not None):
+            self.update_stats()
+
+    def numpoints_edited(self):
+        if self.timearray is not None:
+            numpoints_text = self.numpointsedit.text()
+            if numpoints_text != '':
+                idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+                idx2 = idx1 + int(numpoints_text)
+                time2 = self.timearray[idx2]
+                timestamp1 = timefuncs.np64_to_unix(self.time1)   
+                timestamp2 = timefuncs.np64_to_unix(time2)   
+                self.update_time_inputs(timestamp1, timestamp2)
+                self.update_vlines()
+                self.update_eventlog_display()
+                self.update_stats()
+
+    def update_vlines(self):
+        """pull the time from the inputs and update the gray lines on the display"""
+        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
+        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
+        self.time1 = np.datetime64(self.time1).astype('M8[us]')
+        
+        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
+        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
+        self.time2 = np.datetime64(self.time2).astype('M8[us]')
+        
+        self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
+        self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
+        
+        self.plotwidget.draw()
         
 
-    def refresh_modulelist(self):
+    def update_time_inputs(self, timestamp1, timestamp2):
+        """Update the time inputs based on timestamps. timestamps should be altered to numpy64"""
+
+        startdatetime = QtCore.QDateTime()
+        startdatetime.setTime_t(timestamp1)
+        enddatetime = QtCore.QDateTime()
+        enddatetime.setTime_t(timestamp2)
+
+        #update the time selectors, but don't signal to update_fig
+        self.startTimeInput.blockSignals(True)
+        self.endTimeInput.blockSignals(True)
+        self.startTimeInput.setDateTime(startdatetime)
+        self.endTimeInput.setDateTime(enddatetime)
+        self.startTimeInput.blockSignals(False)
+        self.endTimeInput.blockSignals(False)
+
+
+    def update_numpoints(self):
+        if self.timearray is not None:
+            idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+            idx2 = timefuncs.nearest_timeind(self.timearray,self.time2)
+            numpoints = abs(idx2 - idx1)
+            self.numpointsedit.blockSignals(True)
+            self.numpointsedit.setText(str(numpoints))
+            self.numpointsedit.blockSignals(False)
+    
+    #General updating that doesn't need to be coordinated with each other
+    def update_fig(self):
+        self.update_channel_array()
+        if self.timearray is not None:
+            print(self.channel_array)
+            self.update_time_inputs(timefuncs.np64_to_unix(self.timearray[0]),timefuncs.np64_to_unix(self.timearray[-1]))
+            self.timeinput_edited()
+            self.plotwidget.update_data(self.channel_array)    
+            self.update_stats() 
+        self.update_eventlog_display()
+
+    def update_channel_array(self):
+        """Update the internal array of channels based on the list seleciton"""
+        if(self.Logfiletdms != None):
+            self.channel_array = []
+            for sel_channel in self.selectChannel.selectedItems():
+                grouptxt, channeltxt = sel_channel.text().split('\\')
+                channel = self.Logfiletdms.object(grouptxt,channeltxt)
+                self.channel_array.append(channel)
+            if (len(self.channel_array) > 0):
+                
+                #Calculate the 'stride' which is every x data points, to reduce the probelm handing large data files.
+                if self.radioButton_stride.isChecked():
+                    num_samples = self.channel_array[0].properties['wf_samples']
+                    self.stride = math.ceil(num_samples/1000)
+                else:
+                    self.stride = 1
+                #Currently the timearray and channel_data, used for stats calc and other things, are just the first channel in the seleciton. 
+                self.timearray = self.channel_array[0].time_track(absolute_time = True)[::self.stride]
+                self.timearray = self.timearray.astype('M8[us]')
+                self.channel_data =  self.channel_array[0].data[::self.stride] 
+        
+    def update_modulelist(self):
         """Pull public post processing modules from mhd.post and list in the module combo box"""
         self.combo_module.clear()
 
@@ -97,9 +203,9 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 moduleliststr.extend([module[0]])
         
         self.combo_module.insertItems(0,moduleliststr)
-        self.refresh_functionlist()
+        self.update_functionlist()
 
-    def refresh_functionlist(self):
+    def update_functionlist(self):
         """Obtain a list of public functions in the selected module and list them"""
         self.combo_function.clear()
         self.functionlist = []
@@ -112,23 +218,102 @@ class Ui_MainWindow(layout.Ui_MainWindow):
         functionliststr.extend(func[0] for func in members if func[0][0] != '_')
 
         self.combo_function.insertItems(0,functionliststr)
-        self.refresh_docstring()
+        self.update_docstring()
 
-    def refresh_docstring(self):
+    def update_docstring(self):
         """Updates the docstring display for selected post processing function"""
         self.text_docstring.clear()
         function = self.functionlist[self.combo_function.currentIndex()]
         docstring = function.__doc__
-        if(docstring[0] == '\n'):
-            docstring = docstring[1:]
+        if docstring is None:
+            docstring = 'Missing Docstring'
+        else:
+            if(docstring[0] == '\n'):
+                docstring = docstring[1:]
 
         self.text_docstring.insertPlainText(docstring)
 
+    def update_stats(self):
+        """update the statistics calculations and display"""
+        idx1 = timefuncs.nearest_timeind(self.timearray,self.time1)
+        idx2 = timefuncs.nearest_timeind(self.timearray,self.time2)
+        if len(self.channel_data[idx1:idx2]) > 0:
+            self.t_mean.setText('{0:.3f}'.format(np.mean(self.channel_data[idx1:idx2])))
+            self.t_med.setText('{0:.3f}'.format(np.median(self.channel_data[idx1:idx2])))
+            self.t_skew.setText('{0:.3f}'.format(stats.skew(self.channel_data[idx1:idx2])))
+            self.t_std.setText('{0:.3f}'.format(np.std(self.channel_data[idx1:idx2])))
+            self.t_min.setText('{0:.3f}'.format(np.min(self.channel_data[idx1:idx2])))
+            self.t_max.setText('{0:.3f}'.format(np.max(self.channel_data[idx1:idx2])))
 
     def reloadppr(self):
         """reloads the mhdpy package and updates the module list"""
         reload_package(pp)
-        self.refresh_modulelist()
+        self.update_modulelist()
+
+    def update_channel_display(self):
+        """Updates the channel list to display channels in selected group"""
+        # selgroup = self.selectGroup.currentRow()
+        selgroups = self.selectGroup.selectedItems()
+
+        self.selectChannel.clear()
+        channelnamelist = []
+        for groupitem in selgroups:
+            grouptext = groupitem.text()    
+            channels = self.Logfiletdms.group_channels(grouptext)
+            for channel in channels:
+                channelnamelist.append(grouptext + '\\'  + channel.channel)
+        
+        self.selectChannel.insertItems(0,channelnamelist)
+        self.selectChannel.setCurrentRow(0)
+        
+    def update_eventticklist(self):
+        """Displays the events detected in the eventlog"""
+        eventtypelist = []
+        for event in self.jsonfile:
+            eventtypelist.append(event['event']['type'])
+        
+        eventtypelist = list(set(eventtypelist))
+        eventtypelist.sort()
+        self.select_eventtickdisplay.clear()
+        self.select_eventtickdisplay.insertItems(0,eventtypelist)
+
+    def update_eventlog_display(self):
+        """update the cut eventlog in the text display and update the folder and filename inputs"""
+        
+        self.eventlog_cut = el.geteventinfo(self.jsonfile,cuttimes = [self.time1,self.time2])
+        if self.eventlog_cut != self.eventlog_latest:
+            self.eventlog_latest = self.eventlog_cut
+
+            string = ''
+
+            for time, event in self.eventlog_cut.items():
+                localtz = tzlocal.get_localzone()
+                # time = time.astype(datetime.datetime).replace(tzinfo = None).astimezone(pytz.utc)
+                time = time.astype(datetime.datetime).replace(tzinfo = pytz.utc).astimezone(localtz)
+                string += time.strftime('%H:%M:%S') + ' - '
+                # string += str(time)
+                string += json.dumps(event)
+                string += '\r\n'
+            
+            self.text_events.setText(string)
+            if(self.Logfiletdms != None):
+                basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
+                event_before = el.event_before(self.jsonfile, self.time1)
+                if event_before != None:
+                    folder, filename = el.gen_fileinfo(event_before)
+                    filename = basefilename + filename
+                else:
+                    folder, filename = "",""
+                self.folderEdit.setText(folder)    
+                self.filenameEdit.setText(filename)
+
+    ###Loading of files###
+
+    def newfile_update(self):
+        #common updating between opening a new eventlog and a new logfile
+        self.update_eventticklist()
+        self.plotwidget.update_eventticks()
+        self.update_fig()
 
     def open_eventlog(self, filepath= 0):
         if(filepath == 0):
@@ -141,13 +326,13 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 self.jsonfile = json.load(file_read)
             folder = os.path.split(filepath)[0]
             self.datefolder = folder
-
-        #self.refresh()      
-        self.plotwidget.update_eventticks()
+        
         timestamp1 = self.jsonfile[0]['dt']
         timestamp2 = self.jsonfile[-1]['dt']
         self.update_time_inputs(timestamp1,timestamp2)
-        self.refresh()
+        self.timeinput_edited()
+        self.plotwidget.zoom('all')
+        self.newfile_update()
 
     def open_tdmsfile(self, filepath= 0):
         """
@@ -172,7 +357,6 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 json.dump(self.ppsettings,writefile )
 
 
-
             #search upward in file directory for eventlog.json, then set that as the date folder
             while(True):             
                 filelist = os.listdir(folder)
@@ -183,152 +367,16 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                         self.jsonfile = json.load(fp)
                     break
                 folder = os.path.split(folder)[0]
-
             #pull out groups and populate the group display
             self.groups = self.Logfiletdms.groups()
             self.selectGroup.clear()
             self.selectGroup.insertItems(0,self.groups)
             self.selectGroup.setCurrentRow(0)
-            
             self.update_channel_display()
-            
-            self.refresh()      
-            self.plotwidget.update_eventticks()
 
-    def update_channel_display(self):
-        """Updates the channel list to display channels in selected group"""
-        selgroup = self.selectGroup.currentRow()
-        channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-        channelnamelist = []
-        for channel in channels:
-            channelnamelist.append(channel.channel)
-        self.selectChannel.clear()
-        self.selectChannel.insertItems(0,channelnamelist)
-        self.selectChannel.setCurrentRow(0)
-
-        self.timearray = channels[0].time_track(absolute_time = True)
-        self.timedata = list(map(lambda x: timefuncs.np64_to_utc(x),self.timearray))
-        timestamp1 = timefuncs.np64_to_unix(self.timearray[0])
-        timestamp2 = timefuncs.np64_to_unix(self.timearray[-1])
-
-        self.update_time_inputs(timestamp1,timestamp2)
-
-    def update_time_inputs(self, timestamp1, timestamp2):
-        #update_time_displays : updates the time inputs to max and min of channel
-
-        startdatetime = QtCore.QDateTime()
-        startdatetime.setTime_t(timestamp1)
-        enddatetime = QtCore.QDateTime()
-        enddatetime.setTime_t(timestamp2)
-
-        #update the time selectors, but don't signal to refresh
-        self.startTimeInput.blockSignals(True)
-        self.endTimeInput.blockSignals(True)
-        self.startTimeInput.setDateTime(startdatetime)
-        self.endTimeInput.setDateTime(enddatetime)
-        self.startTimeInput.blockSignals(False)
-        self.endTimeInput.blockSignals(False)
-
-    def refresh(self):
-        """full refresh of everything"""
-        if(self.Logfiletdms != None):
-            selgroup = self.selectGroup.currentRow()
-            channels = self.Logfiletdms.group_channels(self.groups[selgroup])
-            selchannel = self.selectChannel.currentRow()
-
-            if (self.channel == None) or (self.channel != channels[selchannel]):
-                self.channel = channels[selchannel]
-                self.plotwidget.update_data(self.channel)
+            self.newfile_update()
         
-            
-            self.update_stats(self.channel)
-        self.refresh_time()
-        self.display_eventlog()
-        
-        
-
-    def geteventinfo(self, cut = False ,eventstr = None):
-        """pull the testcase info from the json file, only those after time1 if cut is true"""
-        tci = {}
-        for event in self.jsonfile:
-            if (event['event']['type'] == eventstr) or (eventstr == None):
-                time = datetime.datetime.utcfromtimestamp(event['dt'])
-                time = time.replace(tzinfo=pytz.utc)
-                tci[time] = event['event']['event info']
-
-        #pull only those events before time1 if cut is true
-        if(cut):
-            tci_cut = {}
-            for time, event in tci.items():
-                if((time>self.time1) and (time<self.time2)): 
-                    tci_cut[time] = event
-            tci = tci_cut
-
-        return tci
-
-    def display_eventlog(self):
-        """refresh the cut eventlog in the text display and update the folder and filename inputs"""
-        
-        self.eventlog_cut = self.geteventinfo(cut = True)
-        if self.eventlog_cut != self.eventlog_latest:
-            self.eventlog_latest = self.eventlog_cut
-
-            string = ''
-
-            for time, event in self.eventlog_cut.items():
-                string += time.strftime('%H:%M:%S') + ' - '
-                string += json.dumps(event)
-                string += '\r\n'
-            
-            self.text_events.setText(string)
-            if(self.Logfiletdms != None):
-                basefilename = os.path.splitext(os.path.split(self.logfilepath)[1])[0]
-                folder, filename = self.gen_fileinfo(self.event_before(self.time1))
-                filename = basefilename + filename
-                self.folderEdit.setText(folder)    
-                self.filenameEdit.setText(filename)
-
-    def event_before(self,time_cut):
-        """returns the event before time_cut"""
-        tci = self.geteventinfo(False,'TestCaseInfoChange')
-        tci_cut = []
-        for time, event in tci.items():
-            if(time<=time_cut): 
-                tci_cut.append(event)
-        return tci_cut[-1]
-
-
-    def refresh_time(self):
-        """pull the time from the inputs and update the gray lines on the display"""
-        self.time1 = self.startTimeInput.dateTime().toPyDateTime()
-        self.time1 = self.time1.replace(tzinfo = None).astimezone(pytz.utc)
-        
-        self.time2 = self.endTimeInput.dateTime().toPyDateTime()
-        self.time2 = self.time2.replace(tzinfo = None).astimezone(pytz.utc)
-        
-        self.plotwidget.timeline1.set_xdata([self.time1,self.time1])
-        self.plotwidget.timeline2.set_xdata([self.time2,self.time2])
-        
-        self.plotwidget.draw()
-
-    def update_stats(self,channel):
-        """update the statistics calculations and display"""
-        idx1 = timefuncs.nearest_timeind(self.timedata,self.time1)
-        idx2 = timefuncs.nearest_timeind(self.timedata,self.time2)
-        if len(channel.data[idx1:idx2]) > 0:
-            self.t_mean.setText('{0:.3f}'.format(np.mean(channel.data[idx1:idx2])))
-            self.t_med.setText('{0:.3f}'.format(np.median(channel.data[idx1:idx2])))
-            self.t_skew.setText('{0:.3f}'.format(stats.skew(channel.data[idx1:idx2])))
-            self.t_std.setText('{0:.3f}'.format(np.std(channel.data[idx1:idx2])))
-            self.t_min.setText('{0:.3f}'.format(np.min(channel.data[idx1:idx2])))
-            self.t_max.setText('{0:.3f}'.format(np.max(channel.data[idx1:idx2])))
-
-    def gen_fileinfo(self,tci_event):
-        """Takes in a test case and return a destination folder and filename"""
-        folder = tci_event['project'] + '\\'+ tci_event['subfolder']
-        filename = '_' + tci_event['filename'] + '_'+ tci_event['measurementnumber']
-        return folder, filename
-
+    ###Running post processing routines###
     def run_routine(self):
         """Runs a post processing routine, passing in information from the main window as **kwargs"""
         index = self.combo_function.currentIndex()
@@ -356,8 +404,8 @@ class Ui_MainWindow(layout.Ui_MainWindow):
                 if args.__contains__('times') or args.__contains__('fileoutpaths_list'):
                     #Get the list of output files and times for parsing. There is a list of output files and times for each input file     
                     times = self.gen_times()
-                    timetype = self.combo_times.currentIndex()
-                    if(isinternalfile and timetype == 0): #if parsing an internal file with the markers, you can use custom filenames
+                    timetype = self.combo_times.currentText()
+                    if(isinternalfile and timetype == "Markers"): #if parsing an internal file with the markers, you can use custom filenames
                         fileoutpaths_list = [[os.path.join(self.datefolder, self.folderEdit.text(), self.filenameEdit.text()) + '.tdms']]
                     else:
                         fileoutpaths_list = self.gen_fileout(fileinpaths,times)
@@ -368,31 +416,47 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             
             pp_function(**kwargs) # need to figure how to to remove this redundant call and also allow for abort on empty fileinpaths
             
+    def cutinternalinloc(self):
+        """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
+        pp_function = pp.logfiles.cut_log_file
+        fileinpaths = [self.logfilepath]
+        times = self.gen_times(timetype = 'Markers')
 
+        folder = os.path.split(self.logfilepath)[0]
+
+        basefilename = os.path.splitext(os.path.split(fileinpaths[0])[1])[0]
+
+        fileoutpaths_list = [[os.path.join(folder,basefilename+'_cut.tdms')]]
+
+        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
+        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
+        pp_function(**kwargs)      
+
+    ###Post processing utilitiy###
     def gen_times(self, timetype = None):
         """Generate a list of times, based on the time combo list in the mainwindow"""
         if timetype == None:
-            timetype = self.combo_times.currentIndex() 
+            timetype = self.combo_times.currentText()
         
         times = []
-        if timetype == 0: 
+        if timetype == 'Markers': 
             #Parse all files based on internal time (graph) 
             times = [(self.time1,self.time2)]
-        elif timetype == 1 or timetype == 2:
+        elif timetype == "Eventlog in Time Window" or timetype == "Entire Eventlog":
             #Parse each file based on event log
-            if timetype == 1:
-                cut = True
+            if timetype == "Eventlog in Time Window":
+                cuttimes = [self.time1,self.time2]
             else:
-                cut = False
-            tci = self.geteventinfo(cut = cut,eventstr='TestCaseInfoChange')
+                cuttimes = None
+            tci = el.geteventinfo(self.jsonfile,cuttimes = cuttimes,eventstr='TestCaseInfoChange')
             timelist = list(tci.keys())
             for i in range(len(tci)-1):
                 times.append((timelist[i],timelist[i+1]))
-
+            
             #Add a time like 30 years in the future to just encapsulate the last data point...super janky.
-            times.append((timelist[-1],timelist[-1] + datetime.timedelta(1000))) 
-        elif timetype == 3:
-            saveevents = self.geteventinfo(cut = False,eventstr='VISavingChange')
+            times.append((timelist[-1],timelist[-1] + np.timedelta64(1000))) 
+        elif timetype == "PIMAX1 Savetimes":
+            saveevents = el.geteventinfo(self.jsonfile,eventstr='VISavingChange')
             camsaveevents = []
             timeslist = []
             for time, saveevent in saveevents.items():
@@ -414,31 +478,12 @@ class Ui_MainWindow(layout.Ui_MainWindow):
             basefilename = os.path.splitext(os.path.split(fileinpath)[1])[0]
             fileoutpaths= []
             for timepair in times:
-                folder, filename = self.gen_fileinfo(self.event_before(timepair[0]))
+                folder, filename = el.gen_fileinfo(el.event_before(self.jsonfile,timepair[0]))
                 fileoutpaths.append(os.path.join(self.datefolder, folder, basefilename + filename) + '.tdms')
             fileoutpaths_list.append(fileoutpaths)
 
         return fileoutpaths_list
     
-
-    def cutinternalinloc(self):
-        """cuts up the internal logfile and places the cut file within the logfile location appending _cut """
-        pp_function = pp.logfiles.cut_log_file
-        fileinpaths = [self.logfilepath]
-        times = self.gen_times(timetype = 0)
-
-        folder = os.path.split(self.logfilepath)[0]
-
-        basefilename = os.path.splitext(os.path.split(fileinpaths[0])[1])[0]
-
-        fileoutpaths_list = [[os.path.join(folder,basefilename+'_cut.tdms')]]
-
-        kwargs = {'MainWindow': MainWindow, 'ui' : ui}
-        kwargs = {**kwargs, 'fileinpaths':fileinpaths, 'times': times, 'fileoutpaths_list':fileoutpaths_list}
-        pp_function(**kwargs)        
-
-
-
 def reload_package(package):
     """
     reloads a package and all subpackages
@@ -478,6 +523,6 @@ MainWindow.show()
 #ui.open_tdmsfile('//home//lee//Downloads//2018-08-22//Sensors//Log_Sensors_DAQ_5.tdms') #Linux
 
 
-#ui.refresh()
+#ui.update_fig()
 
 sys.exit(app.exec_())

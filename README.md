@@ -43,5 +43,5 @@ setup.bat does two things, some information about what it does in case there are
 
 # Using MHDLab
 
-The information on the use and further development of the MHDlab software is outlined in the wiki. Read the wiki [overview](https://github.com/aspitarl/MHDlab/wiki/Overview) or read [Data Acquisition, Visualization, and Logging](https://github.com/aspitarl/MHDlab/wiki/Data-Acquisition,-Visualization,-and-Logging) to jump to acquiring data (read the Usage section, Development is for how to add VIs etc.). 
+The information on the use and further development of the MHDlab software is outlined in the wiki. Read the wiki [overview](https://github.com/aspitarl/MHDlab/wiki/Overview) or read [Data Acquisition](https://github.com/aspitarl/MHDlab/wiki/Data-Acquisition) to jump to acquiring data (read the Usage section, Development is for how to add VIs etc.). 
 
